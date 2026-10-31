@@ -1,0 +1,64 @@
+# AI Pipeline Design — VeriMed (`docs/AI_PIPELINE.md`)
+
+## 1. End-to-End Pipeline Architecture
+
+```mermaid
+flowchart TD
+    Input["1. User Input (Bahasa Indonesia)"] --> Validate["2. Input Validation & Emergency Safety Gate"]
+    Validate -- "Emergency Detected" --> Emergency["Emergency Response (Call 119 / IGD)"]
+    Validate -- "Safe Health Query" --> Extract["3. Health Claim Extraction"]
+    Extract --> Normalize["4. Query Normalization (ID + EN Medical Terms)"]
+    Normalize --> Retrieve["5. Hybrid Evidence Retrieval (tsvector + pgvector RRF)"]
+    Retrieve --> Rerank["6. Cross-Encoder Reranking"]
+    Rerank --> Assess["7. Evidence Assessment & Abstention Gate"]
+    Assess --> Explain["8. Grounded Explanation Generation (Untrusted Evidence Isolation)"]
+    Explain --> CiteCheck["9. Programmatic Citation Validation"]
+    CiteCheck --> Output["10. Structured JSON API Response"]
+```
+
+---
+
+## 2. Pipeline Stage Specifications
+
+### Stage 1 & 2: Input Validation & Emergency Safety Gate
+- Enforces character bounds (10–1,000 characters), strips non-printable control characters.
+- Checks for acute emergency indicators (chest pain, difficulty breathing, stroke signs, acute poisoning, self-harm). If matched, halts verification and returns emergency medical guidance.
+
+### Stage 3: Health Claim Extraction
+- Decomposes multi-sentence social media posts into atomic, check-worthy health claims.
+- Rejects non-health inputs or purely subjective personal anecdotes.
+
+### Stage 4: Query Normalization
+- Normalizes colloquial Bahasa Indonesia expressions into standard Indonesian medical terms and English MeSH equivalents to maximize cross-lingual retrieval recall.
+
+### Stage 5: Hybrid Evidence Retrieval
+- Executes two parallel queries against `evidence_chunks`:
+  1. **Lexical Search**: PostgreSQL `ts_rank_cd` over `search_vector` (`TSVECTOR`).
+  2. **Semantic Search**: `pgvector` cosine similarity (`1 - (embedding <=> :query_vec)`) using multilingual embeddings (`intfloat/multilingual-e5-base`, 768 dimensions).
+- Merges rankings using **Reciprocal Rank Fusion (RRF)** ($k = 60$).
+
+### Stage 6: Cross-Encoder Reranking
+- Re-scores the top-$N$ candidate chunks using a multilingual cross-encoder (`cross-encoder/mmarco-mMiniLMv2-L12-H384-v1`) on `(claim_text, chunk_text)` pairs.
+
+### Stage 7: Evidence Assessment & Abstention Gate
+- Classifies the relationship between the claim and top reranked chunks into one of four verdicts:
+  - `SUPPORTED`: Retrieved high-quality evidence consistently supports the claim.
+  - `CONTRADICTED`: Retrieved high-quality evidence refutes or contradicts the claim.
+  - `MIXED_EVIDENCE`: Credible sources present conflicting findings or context-dependent outcomes.
+  - `INSUFFICIENT_EVIDENCE`: No relevant high-confidence evidence exists in the curated database.
+- **Hard Abstention Rule**: If the highest reranker score is below the minimum relevance threshold $\tau_{\text{min}}$ (e.g., `0.35`), the pipeline automatically forces `verdict = INSUFFICIENT_EVIDENCE` and `abstained = True`.
+
+### Stage 8: Grounded Explanation Generation
+- Synthesizes an accessible Bahasa Indonesia explanation strictly from the reranked evidence chunks.
+- **Prompt Injection Defense**: Every retrieved passage is wrapped in `<untrusted_evidence citation_key="[n]">...</untrusted_evidence>` tags, with system instructions forbidding execution of any directive found inside those tags.
+
+### Stage 9: Citation Validation
+- Parses all `[n]` citation markers in the generated explanation and verifies that each marker maps to an actual `evidence_chunk` returned in Stage 6. Any unverified citation triggers regeneration or fallback to deterministic summary.
+
+---
+
+## 3. Evaluation Strategy
+
+1. **Retrieval Metrics**: Recall@5, Recall@10, and Mean Reciprocal Rank (MRR) on curated Indonesian health claim pairs.
+2. **Stance Classification Metrics**: Macro-F1 across the 4 verdict classes and Abstention Precision on out-of-corpus claims.
+3. **Grounding & Citation Fidelity**: Percentage of generated sentences with verified supporting citation spans (target: 100% programmatic citation validity).

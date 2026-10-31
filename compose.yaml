@@ -1,0 +1,54 @@
+services:
+  postgres:
+    image: pgvector/pgvector:pg16
+    container_name: verimed-postgres
+    restart: unless-stopped
+    environment:
+      POSTGRES_USER: ${POSTGRES_USER:-verimed}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-verimed_dev_password}
+      POSTGRES_DB: ${POSTGRES_DB:-verimed_db}
+    ports:
+      - "${POSTGRES_PORT:-5432}:5432"
+    volumes:
+      - verimed_pgdata:/var/lib/postgresql/data
+      - ./infra/docker/postgres/init-pgvector.sql:/docker-entrypoint-initdb.d/01-init-pgvector.sql:ro
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U ${POSTGRES_USER:-verimed} -d ${POSTGRES_DB:-verimed_db}"]
+      interval: 5s
+      timeout: 5s
+      retries: 10
+
+  api:
+    build:
+      context: .
+      dockerfile: infra/docker/api.Dockerfile
+    container_name: verimed-api
+    restart: unless-stopped
+    environment:
+      APP_ENV: ${APP_ENV:-development}
+      DATABASE_URL: postgresql+asyncpg://${POSTGRES_USER:-verimed}:${POSTGRES_PASSWORD:-verimed_dev_password}@postgres:5432/${POSTGRES_DB:-verimed_db}
+      DATABASE_SYNC_URL: postgresql+psycopg://${POSTGRES_USER:-verimed}:${POSTGRES_PASSWORD:-verimed_dev_password}@postgres:5432/${POSTGRES_DB:-verimed_db}
+      AI_PROVIDER: ${AI_PROVIDER:-mock}
+      CORS_ORIGINS: '["http://localhost:3000","http://127.0.0.1:3000"]'
+    ports:
+      - "${API_PORT:-8000}:8000"
+    depends_on:
+      postgres:
+        condition: service_healthy
+
+  web:
+    build:
+      context: .
+      dockerfile: infra/docker/web.Dockerfile
+    container_name: verimed-web
+    restart: unless-stopped
+    environment:
+      NEXT_PUBLIC_APP_NAME: ${NEXT_PUBLIC_APP_NAME:-VeriMed}
+      NEXT_PUBLIC_API_BASE_URL: ${NEXT_PUBLIC_API_BASE_URL:-http://localhost:8000/api/v1}
+    ports:
+      - "3000:3000"
+    depends_on:
+      - api
+
+volumes:
+  verimed_pgdata:
