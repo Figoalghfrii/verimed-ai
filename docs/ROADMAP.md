@@ -9,11 +9,11 @@
 - [x] Scaffold Next.js App Router frontend (TypeScript, Tailwind CSS, TanStack Query, Zod) with live backend connectivity verification page in Bahasa Indonesia.
 - [x] Configure linting, formatting, and automated unit/integration tests (`pytest`, `ruff`, `vitest`, `eslint`).
 
-## Phase 2: Core Verification MVP & Deterministic Pipeline
-- [ ] Implement modular AI pipeline stages (`ClaimExtractor`, `QueryNormalizer`, `HybridRetriever`, `Reranker`, `Assessor`, `Explainer`, `CitationValidator`).
-- [ ] Implement deterministic demonstration provider with clearly labeled synthetic evidence for local development.
-- [ ] Build `POST /api/v1/verify` endpoint and persistence repositories.
-- [ ] Build interactive Claim Verification UI (`/verify`) and Methodology page (`/about`) with source cards, verdict badges, uncertainty callouts, and emergency safety banner.
+## Phase 2: Core Verification MVP & Deterministic Pipeline (Current Phase)
+- [x] Implement modular AI pipeline stages (`SafetyGuard`, `ClaimExtractor`, `QueryNormalizer`, `Retriever`, `Reranker`, `Assessor`, `Explainer`, `CitationValidator`, `Orchestrator`).
+- [x] Implement deterministic demonstration provider with clearly labeled synthetic evidence for local development.
+- [x] Build `POST /api/v1/verify` endpoint and persistence repositories.
+- [x] Build interactive Claim Verification UI (`/verify`) and Methodology page (`/about`) with source cards, verdict badges, uncertainty callouts, and emergency safety banner.
 
 ## Phase 3: Curated Evidence Ingestion & Hybrid Retrieval
 - [ ] Build reproducible ingestion scripts for trusted public health sources (WHO, Kemenkes RI, BPOM, open-access biomedical summaries).

@@ -81,10 +81,10 @@ Checks service liveness, database connectivity, and `pgvector` extension readine
 
 ---
 
-## 3. Planned Phase 2 Verification Endpoint Contract
+## 3. Phase 2 Implemented Verification Endpoint
 
-### `POST /api/v1/verify` (Planned for Next Phase)
-Evaluates a submitted health claim through the VeriMed pipeline.
+### `POST /api/v1/verify`
+Evaluates a submitted health claim through the VeriMed verification pipeline (`MockPipelineProvider` in demonstration mode when `AI_PROVIDER=mock`).
 
 #### Request Body
 ```json
@@ -93,6 +93,15 @@ Evaluates a submitted health claim through the VeriMed pipeline.
   "language": "id"
 }
 ```
+
+#### Response `200 OK`
+Returns `ApiResponse[VerificationResponseData]`:
+- `status`: `"COMPLETED"` or `"EMERGENCY_HALT"`
+- `is_demonstration`: `true` when `AI_PROVIDER=mock`
+- `persisted`: `true` if persisted to PostgreSQL, `false` if running stateless when DB is offline
+- `emergency_triggered`: `true` when acute emergency indicators are detected (returns `emergency_guidance` with **119 / IGD** contacts and empty `claims`)
+- `claims[]`: list of extracted claims with `verdict`, `verdict_label_id`, `confidence_score`, `abstained`, `explanation`, `uncertainty_notes`, `citations_valid`, and `sources[]` (`is_synthetic_demo: true` in mock mode)
+- `disclaimer`: mandatory Bahasa Indonesia non-diagnostic disclaimer
 
 #### Assessment Verdicts
 - `SUPPORTED` (*Didukung Bukti*)
