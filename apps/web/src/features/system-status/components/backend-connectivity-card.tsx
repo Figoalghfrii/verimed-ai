@@ -13,19 +13,19 @@ export function BackendConnectivityCard() {
   return (
     <section
       aria-labelledby="system-status-heading"
-      className="rounded-xl border border-slate-200 bg-white p-6 shadow-sm"
+      className="rounded-3xl border border-slate-200/75 bg-white p-6 shadow-bento sm:p-7"
     >
-      <div className="flex flex-wrap items-center justify-between gap-4 border-b border-slate-100 pb-4">
+      <div className="flex flex-wrap items-center justify-between gap-4 border-b border-slate-100 pb-5">
         <div>
           <h2
             id="system-status-heading"
-            className="text-lg font-semibold text-slate-900"
+            className="text-lg font-bold text-slate-900"
           >
             Status Konektivitas Sistem &amp; Basis Data Bukti
           </h2>
-          <p className="text-sm text-slate-600">
+          <p className="mt-0.5 text-sm text-slate-600">
             Memverifikasi koneksi langsung ke endpoint{" "}
-            <code className="rounded bg-slate-100 px-1.5 py-0.5 text-xs font-mono text-slate-800">
+            <code className="rounded-md bg-slate-100 px-2 py-0.5 font-mono text-xs text-slate-800">
               GET /api/v1/health
             </code>
           </p>
@@ -34,7 +34,7 @@ export function BackendConnectivityCard() {
           type="button"
           onClick={() => refetch()}
           disabled={isFetching}
-          className="inline-flex items-center rounded-lg border border-brand-600 bg-brand-600 px-4 py-2 text-sm font-medium text-white transition hover:bg-brand-700 focus:outline-none focus:ring-2 focus:ring-brand-600 focus:ring-offset-2 disabled:opacity-50"
+          className="inline-flex items-center rounded-full bg-brand-600 px-5 py-2.5 text-sm font-semibold text-white shadow-sm transition hover:bg-brand-700 focus:outline-none focus:ring-2 focus:ring-brand-600 focus:ring-offset-2 disabled:opacity-50"
         >
           {isFetching ? "Memeriksa..." : "Periksa Ulang Koneksi"}
         </button>
@@ -43,7 +43,7 @@ export function BackendConnectivityCard() {
       {isLoading && (
         <div
           role="status"
-          className="mt-4 rounded-lg bg-slate-50 p-4 text-sm text-slate-700"
+          className="mt-5 rounded-2xl bg-canvas p-4 text-sm text-slate-700"
         >
           Menghubungi layanan backend VeriMed API...
         </div>
@@ -52,7 +52,7 @@ export function BackendConnectivityCard() {
       {isError && (
         <div
           role="alert"
-          className="mt-4 rounded-lg border border-red-200 bg-red-50 p-4 text-sm text-red-900"
+          className="mt-5 rounded-2xl border border-rose-200 bg-rose-50 p-4 text-sm text-rose-900"
         >
           <p className="font-semibold">Gagal terhubung ke Backend API</p>
           <p className="mt-1">
@@ -64,13 +64,13 @@ export function BackendConnectivityCard() {
       )}
 
       {health && (
-        <div className="mt-4 space-y-4">
+        <div className="mt-5 space-y-4">
           <div className="grid grid-cols-1 gap-4 sm:grid-cols-3">
-            <div className="rounded-lg border border-slate-200 bg-slate-50 p-4">
-              <span className="text-xs font-medium uppercase tracking-wider text-slate-500">
+            <div className="rounded-2xl border border-slate-200/70 bg-canvas p-4">
+              <span className="text-xs font-semibold uppercase tracking-wider text-slate-500">
                 Status Layanan API
               </span>
-              <div className="mt-1 flex items-center gap-2">
+              <div className="mt-1.5 flex items-center gap-2">
                 <span
                   className={`inline-block h-2.5 w-2.5 rounded-full ${
                     health.status === "healthy"
@@ -78,7 +78,7 @@ export function BackendConnectivityCard() {
                       : "bg-amber-500"
                   }`}
                 />
-                <span className="text-base font-semibold text-slate-900">
+                <span className="text-base font-bold text-slate-900">
                   {health.status === "healthy"
                     ? "Aktif (Healthy)"
                     : "Terdegradasi (Degraded)"}
@@ -89,11 +89,11 @@ export function BackendConnectivityCard() {
               </p>
             </div>
 
-            <div className="rounded-lg border border-slate-200 bg-slate-50 p-4">
-              <span className="text-xs font-medium uppercase tracking-wider text-slate-500">
+            <div className="rounded-2xl border border-slate-200/70 bg-canvas p-4">
+              <span className="text-xs font-semibold uppercase tracking-wider text-slate-500">
                 PostgreSQL + pgvector
               </span>
-              <div className="mt-1 flex items-center gap-2">
+              <div className="mt-1.5 flex items-center gap-2">
                 <span
                   className={`inline-block h-2.5 w-2.5 rounded-full ${
                     health.database.status === "connected" &&
@@ -102,7 +102,7 @@ export function BackendConnectivityCard() {
                       : "bg-amber-500"
                   }`}
                 />
-                <span className="text-base font-semibold text-slate-900">
+                <span className="text-base font-bold text-slate-900">
                   {health.database.status === "connected"
                     ? "Terhubung"
                     : "Belum Terhubung"}
@@ -117,12 +117,12 @@ export function BackendConnectivityCard() {
               </p>
             </div>
 
-            <div className="rounded-lg border border-slate-200 bg-slate-50 p-4">
-              <span className="text-xs font-medium uppercase tracking-wider text-slate-500">
+            <div className="rounded-2xl border border-slate-200/70 bg-canvas p-4">
+              <span className="text-xs font-semibold uppercase tracking-wider text-slate-500">
                 Mode Penyedia AI
               </span>
-              <div className="mt-1">
-                <span className="inline-flex items-center rounded-md bg-amber-100 px-2.5 py-0.5 text-xs font-semibold text-amber-900">
+              <div className="mt-1.5">
+                <span className="inline-flex items-center rounded-full bg-amber-100 px-3 py-1 text-xs font-semibold text-amber-900">
                   {health.ai_provider.toUpperCase()}
                   {meta?.is_demonstration ? " (Mode Demonstrasi)" : ""}
                 </span>
@@ -133,8 +133,9 @@ export function BackendConnectivityCard() {
             </div>
           </div>
 
-          <div className="rounded-lg border border-teal-200 bg-teal-50 p-3.5 text-xs text-teal-950">
-            <strong>Penafian Medis:</strong> {health.disclaimer}
+          <div className="rounded-2xl border border-brand-100 bg-brand-50/70 p-4 text-xs leading-relaxed text-slate-700">
+            <strong className="text-slate-900">Penafian Medis:</strong>{" "}
+            {health.disclaimer}
           </div>
         </div>
       )}
