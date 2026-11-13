@@ -5,12 +5,16 @@ export function MedicalDisclaimerBanner() {
     <div
       role="region"
       aria-label="Penafian Medis"
-      className="border-b border-amber-200 bg-amber-50 px-4 py-2.5 text-center text-xs text-amber-950"
+      className="border-b border-brand-100 bg-white/80 px-4 py-2 text-center text-xs text-slate-600"
     >
-      <strong>Informasi Penting:</strong> VeriMed adalah platform edukasi
-      verifikasi klaim kesehatan berbasis bukti ilmiah, <strong>bukan</strong>{" "}
-      alat diagnosis medis. Dalam kondisi darurat medis, segera hubungi{" "}
-      <strong>119</strong> atau kunjungi IGD terdekat.
+      <span className="mr-1.5 inline-flex items-center rounded-full bg-amber-100 px-2 py-0.5 text-[11px] font-semibold text-amber-900">
+        Edukasi Non-Diagnostik
+      </span>
+      VeriMed adalah platform verifikasi klaim kesehatan berbasis bukti ilmiah,{" "}
+      <strong className="text-slate-800">bukan</strong> alat diagnosis medis.
+      Dalam kondisi darurat medis, hubungi{" "}
+      <strong className="text-rose-700">119</strong> atau kunjungi IGD
+      terdekat.
     </div>
   );
 }
