@@ -1,41 +1,47 @@
-import React from "react";
 import Link from "next/link";
+import React from "react";
 import { Card } from "@/components/ui/card";
 
 const PIPELINE_STEPS = [
   {
-    step: "1. Validasi Input & Gerbang Darurat Medis",
+    num: "01",
+    step: "Validasi Input & Gerbang Darurat Medis",
     desc: "Memeriksa batas panjang input, membersihkan karakter berbahaya, dan mendeteksi gejala gawat darurat untuk segera mengarahkan pengguna ke layanan darurat 119 / IGD.",
   },
   {
-    step: "2. Ekstraksi Klaim & Normalisasi Kueri",
+    num: "02",
+    step: "Ekstraksi Klaim & Normalisasi Kueri",
     desc: "Memecah teks panjang menjadi klaim atomik yang dapat diverifikasi dan menormalisasi istilah kesehatan sehari-hari ke istilah medis terstandar.",
   },
   {
-    step: "3. Pencarian Bukti Hibrida & Reranking",
+    num: "03",
+    step: "Pencarian Bukti Hibrida & Reranking",
     desc: "Menggabungkan pencarian kata kunci (tsvector) dan pencarian makna semantik (pgvector) lalu menyaring potongan bukti menggunakan cross-encoder.",
   },
   {
-    step: "4. Penilaian Bukti & Mekanisme Abstain",
+    num: "04",
+    step: "Penilaian Bukti & Mekanisme Abstain",
     desc: "Menetapkan label Didukung Bukti, Bertentangan dengan Bukti, Bukti Beragam, atau Bukti Tidak Cukup apabila relevansi bukti berada di bawah ambang minimum.",
   },
   {
-    step: "5. Penjelasan Tergrounding & Validasi Sitasi",
+    num: "05",
+    step: "Penjelasan Tergrounding & Validasi Sitasi",
     desc: "Mengisolasi teks bukti di dalam pembatas data tak tepercaya untuk mencegah prompt injection dan memverifikasi setiap nomor sitasi secara terprogram.",
   },
 ];
 
 export default function AboutPage() {
   return (
-    <div className="space-y-8">
-      <section className="space-y-3">
-        <span className="inline-flex items-center rounded-full bg-teal-50 px-3 py-1 text-xs font-semibold text-teal-800 ring-1 ring-inset ring-teal-600/20">
+    <div className="space-y-6">
+      <section className="rounded-3xl border border-white/80 bg-gradient-to-r from-white via-[#F7FAFF] to-[#EEF4FF] p-6 shadow-bento sm:p-7">
+        <span className="inline-flex items-center gap-2 rounded-full border border-brand-200 bg-brand-50 px-3 py-1 text-xs font-semibold text-brand-700">
+          <span className="h-2 w-2 rounded-full bg-brand-600" />
           Metodologi &amp; Transparansi AI
         </span>
-        <h1 className="text-2xl font-bold tracking-tight text-slate-900 sm:text-3xl">
+        <h1 className="mt-3 text-2xl font-bold tracking-tight text-slate-900 sm:text-3xl">
           Tentang VeriMed &amp; Metodologi Verifikasi
         </h1>
-        <p className="max-w-3xl text-sm leading-relaxed text-slate-600">
+        <p className="mt-1.5 max-w-3xl text-sm leading-relaxed text-slate-600">
           VeriMed (<em>Verify Health. Trust Evidence.</em>) adalah platform
           edukasi literasi kesehatan publik yang selaras dengan Tujuan
           Pembangunan Berkelanjutan PBB (<strong>SDG 3</strong>: Kehidupan Sehat
@@ -43,32 +49,37 @@ export default function AboutPage() {
         </p>
       </section>
 
-      <Card as="section" ariaLabelledBy="pipeline-heading" className="space-y-4">
+      <Card as="section" ariaLabelledBy="pipeline-heading" className="space-y-4 sm:p-7">
         <h2
           id="pipeline-heading"
-          className="text-lg font-semibold text-slate-900"
+          className="text-lg font-bold text-slate-900"
         >
           Alur Pipeline Verifikasi Bukti
         </h2>
-        <div className="space-y-3">
+        <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
           {PIPELINE_STEPS.map((item) => (
             <div
-              key={item.step}
-              className="rounded-lg border border-slate-200 bg-slate-50/60 p-4"
+              key={item.num}
+              className="rounded-2xl border border-slate-200/70 bg-canvas p-5"
             >
-              <h3 className="text-sm font-semibold text-slate-900">
+              <span className="inline-flex h-7 items-center rounded-full bg-brand-600 px-3 text-xs font-bold text-white">
+                Tahap {item.num}
+              </span>
+              <h3 className="mt-2.5 text-sm font-bold text-slate-900">
                 {item.step}
               </h3>
-              <p className="mt-1 text-sm text-slate-600">{item.desc}</p>
+              <p className="mt-1 text-sm leading-relaxed text-slate-600">
+                {item.desc}
+              </p>
             </div>
           ))}
         </div>
       </Card>
 
-      <Card as="section" ariaLabelledBy="limits-heading" className="space-y-3">
+      <Card as="section" ariaLabelledBy="limits-heading" className="space-y-4 sm:p-7">
         <h2
           id="limits-heading"
-          className="text-lg font-semibold text-slate-900"
+          className="text-lg font-bold text-slate-900"
         >
           Batasan Sistem &amp; Komitmen Keselamatan
         </h2>
@@ -86,7 +97,7 @@ export default function AboutPage() {
           <li>
             <strong>Status MVP Saat Ini:</strong> Pada fase pengembangan ini,
             pipeline berjalan dengan penyedia data simulasi deterministik (
-            <code className="rounded bg-slate-100 px-1 py-0.5 font-mono text-xs">
+            <code className="rounded-md bg-slate-100 px-1.5 py-0.5 font-mono text-xs">
               AI_PROVIDER=mock
             </code>
             ) sebelum pengindeksan korpus medis produksi.
@@ -95,9 +106,10 @@ export default function AboutPage() {
         <div className="pt-2">
           <Link
             href="/verify"
-            className="inline-flex items-center rounded-lg bg-brand-600 px-4 py-2 text-sm font-semibold text-white transition hover:bg-brand-700"
+            className="inline-flex items-center gap-2 rounded-full bg-brand-600 px-6 py-2.5 text-sm font-semibold text-white shadow-sm transition hover:bg-brand-700"
           >
-            Coba Verifikasi Klaim Sekarang
+            <span>Coba Verifikasi Klaim Sekarang</span>
+            <span aria-hidden="true">&rarr;</span>
           </Link>
         </div>
       </Card>

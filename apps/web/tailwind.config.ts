@@ -9,14 +9,22 @@ const config: Config = {
   theme: {
     extend: {
       colors: {
+        canvas: "#F4F7FB",
         brand: {
-          50: "#f0fdfa",
-          100: "#ccfbf1",
-          600: "#0d9488",
-          700: "#0f766e",
-          800: "#115e59",
-          900: "#134e4a",
+          50: "#EFF6FF",
+          100: "#DBEAFE",
+          200: "#BFDBFE",
+          500: "#3B82F6",
+          600: "#1D7DFA",
+          700: "#1565D8",
+          800: "#1E40AF",
+          900: "#1E3A8A",
         },
+      },
+      boxShadow: {
+        bento: "0 10px 35px -10px rgba(15, 23, 42, 0.06)",
+        glass: "0 14px 36px -12px rgba(29, 125, 250, 0.14)",
+        pill: "0 4px 20px -2px rgba(15, 23, 42, 0.05)",
       },
     },
   },
