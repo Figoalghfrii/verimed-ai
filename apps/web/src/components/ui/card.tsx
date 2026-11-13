@@ -16,7 +16,7 @@ export function Card({
   return (
     <Component
       aria-labelledby={ariaLabelledBy}
-      className={`rounded-xl border border-slate-200 bg-white p-6 shadow-sm ${className}`}
+      className={`rounded-3xl border border-slate-200/75 bg-white p-6 shadow-bento ${className}`}
     >
       {children}
     </Component>
