@@ -9,19 +9,19 @@ import {
 
 const SAMPLE_DEMO_CLAIMS: readonly { label: string; text: string }[] = [
   {
-    label: "Contoh Didukung Bukti",
+    label: "Didukung Bukti",
     text: "Mencuci tangan pakai sabun dan air mengalir membantu menurunkan risiko penularan infeksi diare.",
   },
   {
-    label: "Contoh Bertentangan",
+    label: "Bertentangan",
     text: "Minum air rebusan daun sirsak dapat menyembuhkan semua jenis kanker tanpa kemoterapi.",
   },
   {
-    label: "Contoh Bukti Beragam",
+    label: "Bukti Beragam",
     text: "Konsumsi suplemen vitamin C dosis tinggi setiap hari mencegah pilek biasa.",
   },
   {
-    label: "Contoh Bukti Tidak Cukup",
+    label: "Bukti Tidak Cukup",
     text: "Mengonsumsi ekstrak tanaman eksotis langka dapat menambah tinggi badan orang dewasa.",
   },
 ];
@@ -57,12 +57,12 @@ export function ClaimInputForm({
   };
 
   return (
-    <Card as="section" ariaLabelledBy="claim-form-heading">
-      <div className="space-y-4">
+    <Card as="section" ariaLabelledBy="claim-form-heading" className="sm:p-7">
+      <div className="space-y-5">
         <div>
           <h2
             id="claim-form-heading"
-            className="text-lg font-semibold text-slate-900"
+            className="text-lg font-bold text-slate-900"
           >
             Masukkan Klaim Kesehatan untuk Diperiksa
           </h2>
@@ -72,17 +72,17 @@ export function ClaimInputForm({
           </p>
         </div>
 
-        <div>
-          <p className="text-xs font-medium text-slate-600">
-            Coba contoh klaim demonstrasi:
+        <div className="rounded-2xl border border-slate-200/70 bg-canvas p-4">
+          <p className="text-xs font-semibold uppercase tracking-wider text-slate-500">
+            Contoh Klaim Demonstrasi
           </p>
-          <div className="mt-2 flex flex-wrap gap-2">
+          <div className="mt-2.5 flex flex-wrap gap-2">
             {SAMPLE_DEMO_CLAIMS.map((sample) => (
               <button
                 key={sample.label}
                 type="button"
                 onClick={() => handleSampleClick(sample.text)}
-                className="rounded-lg border border-slate-200 bg-slate-50 px-3 py-1.5 text-xs font-medium text-slate-700 transition hover:border-brand-600 hover:bg-teal-50 hover:text-teal-900"
+                className="rounded-full border border-slate-200 bg-white px-3.5 py-1.5 text-xs font-semibold text-slate-700 shadow-sm transition hover:border-brand-300 hover:bg-brand-50 hover:text-brand-700"
               >
                 {sample.label}
               </button>
@@ -90,11 +90,11 @@ export function ClaimInputForm({
           </div>
         </div>
 
-        <form onSubmit={handleSubmit} noValidate className="space-y-3">
+        <form onSubmit={handleSubmit} noValidate className="space-y-3.5">
           <div>
             <label
               htmlFor="claim-text-input"
-              className="block text-sm font-medium text-slate-800"
+              className="block text-sm font-semibold text-slate-800"
             >
               Teks Klaim Kesehatan
             </label>
@@ -110,20 +110,22 @@ export function ClaimInputForm({
               placeholder="Contoh: Minum antibiotik dapat menyembuhkan flu biasa karena virus..."
               aria-invalid={validationError ? "true" : "false"}
               aria-describedby="claim-input-helper claim-input-error"
-              className="mt-1.5 w-full rounded-lg border border-slate-300 bg-white px-3.5 py-2.5 text-sm text-slate-900 placeholder:text-slate-400 focus:border-brand-600 focus:outline-none focus:ring-2 focus:ring-brand-600/20"
+              className="mt-2 w-full rounded-2xl border border-slate-200 bg-canvas/60 px-4 py-3 text-sm text-slate-900 placeholder:text-slate-400 transition focus:border-brand-500 focus:bg-white focus:outline-none focus:ring-4 focus:ring-brand-500/10"
             />
             <div
               id="claim-input-helper"
-              className="mt-1.5 flex items-center justify-between text-xs text-slate-500"
+              className="mt-2 flex items-center justify-between text-xs text-slate-500"
             >
               <span>Minimal 10 karakter, maksimal 1.000 karakter.</span>
-              <span>{text.trim().length} / 1.000</span>
+              <span className="font-medium tabular-nums">
+                {text.trim().length} / 1.000
+              </span>
             </div>
             {validationError && (
               <p
                 id="claim-input-error"
                 role="alert"
-                className="mt-1.5 text-xs font-medium text-rose-700"
+                className="mt-1.5 text-xs font-semibold text-rose-700"
               >
                 {validationError}
               </p>
@@ -138,14 +140,14 @@ export function ClaimInputForm({
                 setValidationError(null);
               }}
               disabled={isSubmitting || text.length === 0}
-              className="rounded-lg border border-slate-300 bg-white px-4 py-2 text-sm font-medium text-slate-700 transition hover:bg-slate-50 disabled:opacity-50"
+              className="rounded-full border border-slate-200 bg-white px-5 py-2.5 text-sm font-semibold text-slate-700 transition hover:bg-slate-50 disabled:opacity-50"
             >
               Bersihkan
             </button>
             <button
               type="submit"
               disabled={isSubmitting}
-              className="inline-flex items-center rounded-lg bg-brand-600 px-5 py-2.5 text-sm font-semibold text-white transition hover:bg-brand-700 focus:outline-none focus:ring-2 focus:ring-brand-600 focus:ring-offset-2 disabled:opacity-50"
+              className="inline-flex items-center rounded-full bg-brand-600 px-6 py-2.5 text-sm font-semibold text-white shadow-sm transition hover:bg-brand-700 focus:outline-none focus:ring-2 focus:ring-brand-600 focus:ring-offset-2 disabled:opacity-50"
             >
               {isSubmitting ? "Memeriksa Bukti..." : "Periksa Klaim"}
             </button>

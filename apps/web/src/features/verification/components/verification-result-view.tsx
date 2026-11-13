@@ -27,18 +27,20 @@ export function VerificationResultView({
           {result.is_demonstration && (
             <Badge variant="warning">Mode Demonstrasi (Data Simulasi)</Badge>
           )}
-          <span>Waktu proses: {result.processing_time_ms} ms</span>
+          <span className="rounded-full bg-white px-3 py-1 font-medium text-slate-600 shadow-sm">
+            Waktu proses: {result.processing_time_ms} ms
+          </span>
         </div>
       </div>
 
       {result.is_demonstration && (
         <div
           role="note"
-          className="rounded-xl border border-amber-300 bg-amber-50 p-4 text-sm text-amber-950"
+          className="rounded-2xl border border-amber-200 bg-amber-50/90 p-4 text-sm text-amber-950"
         >
           <strong>Pemberitahuan Mode Demonstrasi:</strong> Sistem saat ini
           berjalan dengan penyedia data simulasi deterministik (
-          <code className="rounded bg-amber-100 px-1 py-0.5 font-mono text-xs">
+          <code className="rounded-md bg-amber-100 px-1.5 py-0.5 font-mono text-xs">
             {result.model_version}
           </code>
           ). Hasil ini hanya untuk mendemonstrasikan alur kerja pipeline VeriMed
@@ -52,19 +54,19 @@ export function VerificationResultView({
 
       {!result.emergency_triggered &&
         result.claims.map((claim) => (
-          <Card key={claim.claim_index} as="article" className="space-y-5">
-            <div className="flex flex-wrap items-start justify-between gap-3 border-b border-slate-100 pb-4">
-              <div className="space-y-1">
-                <span className="text-xs font-semibold uppercase tracking-wider text-slate-500">
+          <Card key={claim.claim_index} as="article" className="space-y-5 sm:p-7">
+            <div className="flex flex-wrap items-start justify-between gap-4 border-b border-slate-100 pb-5">
+              <div className="space-y-1.5">
+                <span className="inline-flex items-center rounded-full bg-brand-50 px-2.5 py-0.5 text-[11px] font-semibold uppercase tracking-wider text-brand-700">
                   Klaim #{claim.claim_index}
                 </span>
-                <p className="text-base font-semibold text-slate-900">
+                <p className="text-base font-bold text-slate-900">
                   &ldquo;{claim.claim_text}&rdquo;
                 </p>
               </div>
               <div className="flex flex-col items-end gap-1.5">
                 <AssessmentBadge verdict={claim.verdict} />
-                <span className="text-xs text-slate-500">
+                <span className="text-xs font-medium text-slate-500">
                   Skor keyakinan bukti:{" "}
                   {Math.round(claim.confidence_score * 100)}%
                 </span>
@@ -72,7 +74,7 @@ export function VerificationResultView({
             </div>
 
             <div className="space-y-2">
-              <h3 className="text-sm font-semibold text-slate-900">
+              <h3 className="text-sm font-bold text-slate-900">
                 Penjelasan Berbasis Bukti
               </h3>
               <p className="text-sm leading-relaxed text-slate-700">
@@ -81,30 +83,32 @@ export function VerificationResultView({
             </div>
 
             {claim.abstained && claim.abstention_reason && (
-              <div className="rounded-lg border border-slate-300 bg-slate-100 p-3.5 text-sm text-slate-800">
+              <div className="rounded-2xl border border-slate-200 bg-slate-100/80 p-4 text-sm text-slate-800">
                 <strong>Alasan Sistem Menahan Diri (Abstain):</strong>{" "}
                 {claim.abstention_reason}
               </div>
             )}
 
-            <div className="rounded-lg border border-sky-200 bg-sky-50 p-3.5 text-sm text-sky-950">
-              <strong>Ketidakpastian &amp; Batasan:</strong>{" "}
+            <div className="rounded-2xl border border-brand-100 bg-brand-50/70 p-4 text-sm text-slate-800">
+              <strong className="text-brand-900">
+                Ketidakpastian &amp; Batasan:
+              </strong>{" "}
               {claim.uncertainty_notes}
             </div>
 
             <div className="space-y-3">
               <div className="flex items-center justify-between">
-                <h3 className="text-sm font-semibold text-slate-900">
+                <h3 className="text-sm font-bold text-slate-900">
                   Sumber Bukti Terkait ({claim.sources.length})
                 </h3>
-                <span className="text-xs text-slate-500">
+                <span className="rounded-full bg-slate-100 px-3 py-1 text-xs font-medium text-slate-600">
                   Validasi sitasi:{" "}
                   {claim.citations_valid ? "Terverifikasi" : "Disaring"}
                 </span>
               </div>
 
               {claim.sources.length === 0 ? (
-                <p className="rounded-lg border border-dashed border-slate-300 p-4 text-sm text-slate-600">
+                <p className="rounded-2xl border border-dashed border-slate-300 p-4 text-sm text-slate-600">
                   Tidak ada sumber bukti yang memenuhi ambang relevansi minimum
                   untuk klaim ini.
                 </p>
@@ -124,9 +128,10 @@ export function VerificationResultView({
 
       <div
         role="note"
-        className="rounded-xl border border-teal-200 bg-teal-50 p-4 text-xs leading-relaxed text-teal-950"
+        className="rounded-2xl border border-brand-100 bg-white p-4 text-xs leading-relaxed text-slate-600 shadow-sm"
       >
-        <strong>Penafian Medis:</strong> {result.disclaimer}
+        <strong className="text-slate-900">Penafian Medis:</strong>{" "}
+        {result.disclaimer}
       </div>
     </section>
   );
