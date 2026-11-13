@@ -1,3 +1,4 @@
+import Link from "next/link";
 import React from "react";
 import { BackendConnectivityCard } from "@/features/system-status/components/backend-connectivity-card";
 
@@ -18,7 +19,22 @@ export default function HomePage() {
           komunikasi ketidakpastian ilmiah yang transparan.
         </p>
 
-        <div className="mt-6 grid grid-cols-1 gap-4 sm:grid-cols-4">
+        <div className="mt-6 flex flex-wrap gap-3">
+          <Link
+            href="/verify"
+            className="inline-flex items-center rounded-lg bg-brand-600 px-5 py-2.5 text-sm font-semibold text-white transition hover:bg-brand-700"
+          >
+            Periksa Klaim Kesehatan
+          </Link>
+          <Link
+            href="/about"
+            className="inline-flex items-center rounded-lg border border-slate-300 bg-white px-5 py-2.5 text-sm font-semibold text-slate-700 transition hover:bg-slate-50"
+          >
+            Pelajari Metodologi
+          </Link>
+        </div>
+
+        <div className="mt-8 grid grid-cols-1 gap-4 sm:grid-cols-4">
           <div className="rounded-lg border border-emerald-200 bg-emerald-50/60 p-3.5">
             <p className="text-xs font-semibold text-emerald-900">
               Didukung Bukti

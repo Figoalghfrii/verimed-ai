@@ -22,9 +22,7 @@ class VerificationRequest(TimestampUUIDMixin, Base):
     )
     input_text: Mapped[str] = mapped_column(Text, nullable=False)
     language_code: Mapped[str] = mapped_column(String(10), default="id", nullable=False)
-    status: Mapped[str] = mapped_column(
-        String(32), default="PENDING", index=True, nullable=False
-    )
+    status: Mapped[str] = mapped_column(String(32), default="PENDING", index=True, nullable=False)
     is_private: Mapped[bool] = mapped_column(Boolean, default=True, nullable=False)
     is_demonstration: Mapped[bool] = mapped_column(Boolean, default=True, nullable=False)
     emergency_triggered: Mapped[bool] = mapped_column(Boolean, default=False, nullable=False)

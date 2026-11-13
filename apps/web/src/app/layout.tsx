@@ -1,4 +1,5 @@
 import type { Metadata } from "next";
+import Link from "next/link";
 import React from "react";
 import "./globals.css";
 import { AppQueryProvider } from "@/components/providers/query-provider";
@@ -20,8 +21,8 @@ export default function RootLayout({
       <body className="min-h-screen flex flex-col">
         <MedicalDisclaimerBanner />
         <header className="border-b border-slate-200 bg-white">
-          <div className="mx-auto flex max-w-5xl items-center justify-between px-4 py-4">
-            <div className="flex items-center gap-3">
+          <div className="mx-auto flex max-w-5xl flex-wrap items-center justify-between gap-4 px-4 py-4">
+            <Link href="/" className="flex items-center gap-3">
               <span className="inline-flex h-9 w-9 items-center justify-center rounded-lg bg-brand-700 text-sm font-bold text-white">
                 VM
               </span>
@@ -30,13 +31,30 @@ export default function RootLayout({
                   VeriMed
                 </span>
                 <span className="ml-2 rounded bg-teal-100 px-2 py-0.5 text-xs font-medium text-teal-800">
-                  Phase 1 Foundation
+                  MVP
                 </span>
               </div>
-            </div>
-            <p className="text-xs font-medium text-slate-500">
-              Verify Health. Trust Evidence. • SDG 3
-            </p>
+            </Link>
+            <nav aria-label="Navigasi Utama" className="flex items-center gap-5">
+              <Link
+                href="/"
+                className="text-sm font-medium text-slate-700 transition hover:text-brand-700"
+              >
+                Beranda
+              </Link>
+              <Link
+                href="/verify"
+                className="text-sm font-medium text-slate-700 transition hover:text-brand-700"
+              >
+                Verifikasi Klaim
+              </Link>
+              <Link
+                href="/about"
+                className="text-sm font-medium text-slate-700 transition hover:text-brand-700"
+              >
+                Metodologi
+              </Link>
+            </nav>
           </div>
         </header>
         <AppQueryProvider>
