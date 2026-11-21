@@ -136,3 +136,44 @@ Returns indexed evidence corpus counts (`documents_count`, `chunks_count`, `synt
   }
 }
 ```
+
+---
+
+## 5. Phase 4 Implemented User Feedback Endpoint & Rate Limiting
+
+### `POST /api/v1/feedback`
+Records anonymous user clarity ratings on verification explanations (`is_helpful`, optional `feedback_category` in `CLARITY | CITATIONS | ACCURACY_CONCERN | OTHER`, and sanitized optional `comment` up to 500 characters).
+
+#### Request Body
+```json
+{
+  "request_id": "550e8400-e29b-41d4-a716-446655440000",
+  "is_helpful": true,
+  "feedback_category": "CLARITY",
+  "comment": "Penjelasan ringkas dan mudah dipahami."
+}
+```
+
+#### Response `201 Created`
+```json
+{
+  "success": true,
+  "data": {
+    "feedback_id": "9f8e7d6c-5b4a-3210-fedc-ba9876543210",
+    "request_id": "550e8400-e29b-41d4-a716-446655440000",
+    "is_helpful": true,
+    "feedback_category": "CLARITY",
+    "persisted": true,
+    "message": "Terima kasih! Masukan Anda membantu meningkatkan kejelasan penjelasan VeriMed."
+  },
+  "meta": {
+    "request_id": "8f9d2a1b-3c4e-4f5a-9b1c-2d3e4f5a6b7c",
+    "timestamp": "2026-11-21T17:00:00Z",
+    "api_version": "v1",
+    "is_demonstration": false
+  }
+}
+```
+
+### Rate-Limiting Middleware
+Non-exempt endpoints include `X-RateLimit-Limit`, `X-RateLimit-Remaining`, and `X-RateLimit-Reset` headers (controlled by `RATE_LIMIT_ENABLED` and `RATE_LIMIT_REQUESTS_PER_MINUTE`). Requests exceeding the per-IP sliding-window limit receive HTTP `429` with `ErrorResponse` (`code: "RATE_LIMIT_EXCEEDED"`) and a `Retry-After` header. `/api/v1/health` and OpenAPI docs remain exempt.
