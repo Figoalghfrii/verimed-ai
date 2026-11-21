@@ -1,8 +1,11 @@
 """Service for validating, chunking, embedding, and indexing curated evidence documents."""
 
+import logging
 import uuid
 from dataclasses import dataclass
 from datetime import UTC, date, datetime
+
+from sqlalchemy.exc import SQLAlchemyError
 
 from verimed_api.core.security import is_safe_external_url
 from verimed_api.pipeline.chunker import DocumentChunker, compute_content_hash
@@ -13,6 +16,8 @@ from verimed_api.repositories.evidence_repo import (
     EvidenceDocumentRecord,
     EvidenceRepository,
 )
+
+logger = logging.getLogger(__name__)
 
 
 @dataclass(frozen=True, slots=True)
@@ -82,5 +87,13 @@ class IngestionService:
         return await self._evidence_repo.upsert_document_with_chunks(record)
 
     async def get_stats(self) -> EvidenceCorpusStats:
-        """Return indexed evidence document and chunk counts."""
-        return await self._evidence_repo.get_corpus_stats()
+        """Return indexed evidence document and chunk counts, or zeros if DB is offline."""
+        try:
+            return await self._evidence_repo.get_corpus_stats()
+        except (SQLAlchemyError, OSError):
+            logger.warning("Evidence stats requested while DB is unavailable.")
+            return EvidenceCorpusStats(
+                documents_count=0,
+                chunks_count=0,
+                synthetic_documents_count=0,
+            )

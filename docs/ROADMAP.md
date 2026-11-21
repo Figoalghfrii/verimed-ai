@@ -24,3 +24,9 @@
 - [x] Implement `POST /api/v1/feedback` for user clarity ratings.
 - [x] Execute retrieval Recall@K, stance Macro-F1, and citation fidelity evaluation suite in `ml/evaluation/`.
 - [x] Add end-to-end Playwright browser tests and rate-limiting middleware.
+
+## Phase 5: Curated Public Health Corpus, UI Sync & CI/CD
+- [x] Surface `GET /api/v1/evidence/stats` in the home connectivity dashboard and synchronize `/about` operational documentation.
+- [x] Curate verified Kemenkes RI, WHO, and BPOM public health corpus (`ml/data/curated_public_health_corpus.json`) with `is_synthetic_demo: false`.
+- [x] Add WhatsApp-ready shareable evidence summary copy button and privacy-safe local browser history in `/verify`.
+- [x] Configure GitHub Actions CI workflow (`.github/workflows/ci.yml`) and verify Next.js production build.

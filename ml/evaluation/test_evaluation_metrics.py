@@ -1,8 +1,21 @@
-"""Unit and benchmark tests for the VeriMed offline evaluation suite."""
+"""Unit and benchmark tests for the VeriMed offline evaluation suite and curated corpus."""
 
+import json
+import sys
 from pathlib import Path
 
+ROOT_DIR = Path(__file__).resolve().parents[2]
+if str(ROOT_DIR) not in sys.path:
+    sys.path.insert(0, str(ROOT_DIR))
+
 import pytest
+from verimed_api.pipeline.providers.embedding_provider import (
+    DeterministicHashEmbeddingProvider,
+)
+from verimed_api.services.ingestion_service import (
+    IngestionDocumentInput,
+    IngestionService,
+)
 
 from ml.evaluation.metrics import (
     compute_abstention_precision,
@@ -41,4 +54,47 @@ async def test_offline_benchmark_achieves_perfect_citation_fidelity() -> None:
     assert report.recall_at_5 >= 0.8
     assert report.mrr >= 0.6
     assert report.abstention_precision >= 0.8
+    assert report.citation_fidelity == 1.0
+
+
+@pytest.mark.asyncio
+async def test_curated_public_health_corpus_ingestion_and_benchmark() -> None:
+    """Curated Kemenkes/WHO/BPOM corpus passes SSRF checks and achieves high benchmark accuracy."""
+    root = Path(__file__).resolve().parents[2]
+    curated_path = root / "ml" / "data" / "curated_public_health_corpus.json"
+    items = json.loads(curated_path.read_text(encoding="utf-8"))
+    assert len(items) >= 5
+
+    class _StubRepo:
+        async def upsert_document_with_chunks(self, record: object) -> tuple[str, bool]:
+            del record
+            return "doc-id", True
+
+    service = IngestionService(
+        evidence_repo=_StubRepo(),  # type: ignore[arg-type]
+        embedding_provider=DeterministicHashEmbeddingProvider(),
+    )
+
+    for entry in items:
+        assert entry["is_synthetic_demo"] is False
+        doc = IngestionDocumentInput(
+            source_name=entry["source_name"],
+            source_url=entry["source_url"],
+            title=entry["title"],
+            authors=entry.get("authors"),
+            language_code=entry.get("language_code", "id"),
+            source_type=entry["source_type"],
+            body_text=entry["body_text"],
+            is_synthetic_demo=False,
+        )
+        _doc_id, created = await service.ingest_document(doc)
+        assert created is True
+
+    report = await run_benchmark(
+        corpus_path=curated_path,
+        benchmark_path=root / "ml" / "data" / "curated_benchmark_claims.json",
+    )
+    assert report.recall_at_5 == 1.0
+    assert report.mrr == 1.0
+    assert report.abstention_precision == 1.0
     assert report.citation_fidelity == 1.0

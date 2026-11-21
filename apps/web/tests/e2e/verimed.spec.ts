@@ -36,11 +36,31 @@ test.describe("VeriMed End-to-End Flows", () => {
       });
     });
 
+    await page.route("**/api/v1/evidence/stats", async (route) => {
+      await route.fulfill({
+        status: 200,
+        contentType: "application/json",
+        body: JSON.stringify({
+          success: true,
+          data: {
+            documents_count: 8,
+            chunks_count: 16,
+            synthetic_documents_count: 5,
+            ai_provider: "mock",
+            embedding_backend: "hash",
+            reranker_backend: "lexical",
+          },
+          meta: META,
+        }),
+      });
+    });
+
     await page.goto("/");
     await expect(
       page.getByRole("heading", { name: /Verifikasi Klaim Kesehatan/i })
     ).toBeVisible();
     await expect(page.getByText(/VeriMed API/i)).toBeVisible();
+    await expect(page.getByText(/3 terkurasi • 5 simulasi/i)).toBeVisible();
     await expect(page.getByText(/bukan alat diagnosis medis/i).first()).toBeVisible();
   });
 
@@ -138,6 +158,12 @@ test.describe("VeriMed End-to-End Flows", () => {
     ).toBeVisible();
     await expect(
       page.getByText("[Contoh Simulasi] Efektivitas Cuci Tangan Pakai Sabun")
+    ).toBeVisible();
+    await expect(
+      page.getByRole("button", { name: "Salin Ringkasan Bukti" })
+    ).toBeVisible();
+    await expect(
+      page.getByRole("heading", { name: "Riwayat Pemeriksaan Lokal" })
     ).toBeVisible();
 
     await page.getByRole("button", { name: "Ya, Membantu" }).click();

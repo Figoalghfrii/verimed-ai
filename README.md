@@ -74,9 +74,10 @@ pip install -e ".[dev]"
 # Run Alembic database migrations
 alembic upgrade head
 
-# Optional (Phase 3): seed synthetic demonstration evidence chunks into PostgreSQL
+# Optional (Phase 3 / Phase 5): seed curated public health or synthetic evidence into PostgreSQL
 # cd ..\..
-# .\apps\api\.venv\Scripts\python scripts\seed_demo_data.py
+# .\apps\api\.venv\Scripts\python scripts\seed_demo_data.py --preset curated
+# .\apps\api\.venv\Scripts\python scripts\seed_demo_data.py --preset synthetic
 # cd apps\api
 
 # Start FastAPI server on http://localhost:8000

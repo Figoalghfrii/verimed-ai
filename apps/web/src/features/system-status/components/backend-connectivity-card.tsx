@@ -2,13 +2,29 @@
 
 import React from "react";
 import { useBackendHealth } from "../api/use-backend-health";
+import { useEvidenceStats } from "../api/use-evidence-stats";
 
 export function BackendConnectivityCard() {
   const { data, isLoading, isError, error, refetch, isFetching } =
     useBackendHealth();
+  const {
+    data: statsResponse,
+    isLoading: isStatsLoading,
+    refetch: refetchStats,
+    isFetching: isStatsFetching,
+  } = useEvidenceStats();
 
   const health = data?.data;
   const meta = data?.meta;
+  const stats = statsResponse?.data;
+  const curatedDocumentsCount = stats
+    ? Math.max(0, stats.documents_count - stats.synthetic_documents_count)
+    : 0;
+
+  const handleRefresh = () => {
+    void refetch();
+    void refetchStats();
+  };
 
   return (
     <section
@@ -24,19 +40,25 @@ export function BackendConnectivityCard() {
             Status Konektivitas Sistem &amp; Basis Data Bukti
           </h2>
           <p className="mt-0.5 text-sm text-slate-600">
-            Memverifikasi koneksi langsung ke endpoint{" "}
+            Memverifikasi koneksi langsung ke{" "}
             <code className="rounded-md bg-slate-100 px-2 py-0.5 font-mono text-xs text-slate-800">
               GET /api/v1/health
+            </code>{" "}
+            dan{" "}
+            <code className="rounded-md bg-slate-100 px-2 py-0.5 font-mono text-xs text-slate-800">
+              GET /api/v1/evidence/stats
             </code>
           </p>
         </div>
         <button
           type="button"
-          onClick={() => refetch()}
-          disabled={isFetching}
+          onClick={handleRefresh}
+          disabled={isFetching || isStatsFetching}
           className="inline-flex items-center rounded-full bg-brand-600 px-5 py-2.5 text-sm font-semibold text-white shadow-sm transition hover:bg-brand-700 focus:outline-none focus:ring-2 focus:ring-brand-600 focus:ring-offset-2 disabled:opacity-50"
         >
-          {isFetching ? "Memeriksa..." : "Periksa Ulang Koneksi"}
+          {isFetching || isStatsFetching
+            ? "Memeriksa..."
+            : "Periksa Ulang Koneksi"}
         </button>
       </div>
 
@@ -131,6 +153,71 @@ export function BackendConnectivityCard() {
                 API Versi: {meta?.api_version ?? "v1"}
               </p>
             </div>
+          </div>
+
+          <div className="rounded-2xl border border-slate-200/70 bg-canvas p-4">
+            <div className="flex flex-wrap items-center justify-between gap-2">
+              <span className="text-xs font-semibold uppercase tracking-wider text-slate-500">
+                Korpus Bukti Terindeks &amp; Konfigurasi Retrieval
+              </span>
+              {stats && (
+                <span className="rounded-full bg-white px-2.5 py-0.5 text-[11px] font-medium text-slate-600 shadow-sm">
+                  Embedding:{" "}
+                  <code className="font-mono">{stats.embedding_backend}</code>{" "}
+                  • Reranker:{" "}
+                  <code className="font-mono">{stats.reranker_backend}</code>
+                </span>
+              )}
+            </div>
+
+            {isStatsLoading ? (
+              <p className="mt-2 text-xs text-slate-600">
+                Memuat statistik korpus bukti...
+              </p>
+            ) : stats ? (
+              <div className="mt-3 grid grid-cols-1 gap-3 sm:grid-cols-3">
+                <div className="rounded-xl bg-white p-3 shadow-sm">
+                  <p className="text-[11px] font-medium text-slate-500">
+                    Dokumen Terindeks
+                  </p>
+                  <p className="mt-0.5 text-lg font-bold tabular-nums text-slate-900">
+                    {stats.documents_count}
+                  </p>
+                  <p className="text-[11px] text-slate-600">
+                    {curatedDocumentsCount} terkurasi •{" "}
+                    {stats.synthetic_documents_count} simulasi
+                  </p>
+                </div>
+                <div className="rounded-xl bg-white p-3 shadow-sm">
+                  <p className="text-[11px] font-medium text-slate-500">
+                    Potongan Bukti (Chunks)
+                  </p>
+                  <p className="mt-0.5 text-lg font-bold tabular-nums text-slate-900">
+                    {stats.chunks_count}
+                  </p>
+                  <p className="text-[11px] text-slate-600">
+                    Siap untuk pencarian RRF + pgvector
+                  </p>
+                </div>
+                <div className="rounded-xl bg-white p-3 shadow-sm">
+                  <p className="text-[11px] font-medium text-slate-500">
+                    Pipeline Aktif
+                  </p>
+                  <p className="mt-0.5 text-lg font-bold text-slate-900">
+                    {stats.ai_provider.toUpperCase()}
+                  </p>
+                  <p className="text-[11px] text-slate-600">
+                    {stats.documents_count === 0
+                      ? "Belum ada korpus di basis data"
+                      : "Korpus terindeks tersedia"}
+                  </p>
+                </div>
+              </div>
+            ) : (
+              <p className="mt-2 text-xs text-slate-600">
+                Statistik korpus bukti tidak tersedia saat ini.
+              </p>
+            )}
           </div>
 
           <div className="rounded-2xl border border-brand-100 bg-brand-50/70 p-4 text-xs leading-relaxed text-slate-700">

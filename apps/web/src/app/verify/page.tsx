@@ -1,13 +1,43 @@
 "use client";
 
-import React from "react";
+import React, { useEffect, useState } from "react";
 import { Card } from "@/components/ui/card";
 import { useVerifyClaim } from "@/features/verification/api/use-verify-claim";
+import { AssessmentBadge } from "@/features/verification/components/assessment-badge";
 import { ClaimInputForm } from "@/features/verification/components/claim-input-form";
 import { VerificationResultView } from "@/features/verification/components/verification-result-view";
+import {
+  clearVerificationHistory,
+  loadVerificationHistory,
+  saveVerificationToHistory,
+  VerificationHistoryEntry,
+} from "@/features/verification/lib/verification-history";
+import { VerificationResponseData } from "@/features/verification/schemas/verification-schema";
 
 export default function VerifyPage() {
   const { mutate, data, isPending, isError, error } = useVerifyClaim();
+  const [history, setHistory] = useState<VerificationHistoryEntry[]>([]);
+  const [selectedHistoryResult, setSelectedHistoryResult] =
+    useState<VerificationResponseData | null>(null);
+
+  useEffect(() => {
+    setHistory(loadVerificationHistory());
+  }, []);
+
+  useEffect(() => {
+    if (data?.data && !data.data.emergency_triggered) {
+      setSelectedHistoryResult(null);
+      setHistory(saveVerificationToHistory(data.data));
+    }
+  }, [data]);
+
+  const activeResult = selectedHistoryResult ?? data?.data ?? null;
+
+  const handleClearHistory = () => {
+    clearVerificationHistory();
+    setHistory([]);
+    setSelectedHistoryResult(null);
+  };
 
   return (
     <div className="space-y-6">
@@ -27,7 +57,10 @@ export default function VerifyPage() {
       </section>
 
       <ClaimInputForm
-        onSubmit={(payload) => mutate(payload)}
+        onSubmit={(payload) => {
+          setSelectedHistoryResult(null);
+          mutate(payload);
+        }}
         isSubmitting={isPending}
       />
 
@@ -66,7 +99,56 @@ export default function VerifyPage() {
         </div>
       )}
 
-      {data && !isPending && <VerificationResultView result={data.data} />}
+      {activeResult && !isPending && (
+        <VerificationResultView result={activeResult} />
+      )}
+
+      {history.length > 0 && (
+        <Card as="section" ariaLabelledBy="local-history-heading" className="space-y-3">
+          <div className="flex flex-wrap items-center justify-between gap-2">
+            <div>
+              <h2
+                id="local-history-heading"
+                className="text-sm font-bold text-slate-900"
+              >
+                Riwayat Pemeriksaan Lokal
+              </h2>
+              <p className="text-xs text-slate-600">
+                Disimpan sementara hanya di browser Anda dan dapat dihapus kapan
+                saja.
+              </p>
+            </div>
+            <button
+              type="button"
+              onClick={handleClearHistory}
+              className="rounded-full border border-slate-200 bg-white px-3.5 py-1.5 text-xs font-semibold text-slate-700 transition hover:border-rose-300 hover:bg-rose-50 hover:text-rose-700"
+            >
+              Hapus Riwayat
+            </button>
+          </div>
+
+          <ul className="space-y-2">
+            {history.map((entry) => {
+              const firstClaim = entry.result.claims[0];
+              if (!firstClaim) return null;
+              return (
+                <li key={entry.result.request_id}>
+                  <button
+                    type="button"
+                    onClick={() => setSelectedHistoryResult(entry.result)}
+                    className="flex w-full flex-wrap items-center justify-between gap-3 rounded-2xl border border-slate-200/80 bg-canvas px-4 py-3 text-left transition hover:border-brand-300 hover:bg-brand-50/40"
+                  >
+                    <span className="line-clamp-1 text-xs font-medium text-slate-800">
+                      &ldquo;{firstClaim.claim_text}&rdquo;
+                    </span>
+                    <AssessmentBadge verdict={firstClaim.verdict} />
+                  </button>
+                </li>
+              );
+            })}
+          </ul>
+        </Card>
+      )}
     </div>
   );
 }
