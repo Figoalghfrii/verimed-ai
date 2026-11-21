@@ -1,0 +1,40 @@
+[
+  {
+    "id": "curated-01",
+    "claim_text": "Cuci tangan pakai sabun dengan air mengalir efektif mencegah penularan diare dan infeksi.",
+    "expected_verdict": "SUPPORTED",
+    "relevant_source_urls": [
+      "https://kemkes.go.id/id/cuci-tangan-pakai-sabun-perilaku-sederhana-berdampak-luar-biasa"
+    ]
+  },
+  {
+    "id": "curated-02",
+    "claim_text": "Antibiotik dapat menyembuhkan flu atau pilek biasa yang disebabkan oleh virus.",
+    "expected_verdict": "CONTRADICTED",
+    "relevant_source_urls": [
+      "https://www.who.int/news-room/fact-sheets/detail/antimicrobial-resistance"
+    ]
+  },
+  {
+    "id": "curated-03",
+    "claim_text": "Obat tradisional atau jamu dapat menyembuhkan kanker tanpa perlu operasi.",
+    "expected_verdict": "CONTRADICTED",
+    "relevant_source_urls": [
+      "https://www.pom.go.id/penjelasan-publik/penjelasan-badan-pom-tentang-obat-tradisional-jamu-yang-dapat-menyembuhkan-kanker"
+    ]
+  },
+  {
+    "id": "curated-04",
+    "claim_text": "Vaksin campak dan imunisasi rutin aman dan efektif mencegah wabah penyakit menular pada anak.",
+    "expected_verdict": "SUPPORTED",
+    "relevant_source_urls": [
+      "https://www.who.int/news-room/fact-sheets/detail/measles"
+    ]
+  },
+  {
+    "id": "curated-05",
+    "claim_text": "Mengonsumsi cairan perak koloid murni menyembuhkan seluruh infeksi bakteri kronis dalam tiga jam.",
+    "expected_verdict": "INSUFFICIENT_EVIDENCE",
+    "relevant_source_urls": []
+  }
+]
