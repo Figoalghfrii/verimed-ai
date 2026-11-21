@@ -1,0 +1,57 @@
+[
+  {
+    "source_name": "VeriMed Demo Corpus — Kebersihan Tangan",
+    "source_url": "https://demo.verimed.local/synthetic/ctps-infeksi",
+    "title": "[Contoh Simulasi] Efektivitas Cuci Tangan Pakai Sabun dalam Pencegahan Infeksi",
+    "authors": "VeriMed Synthetic Demo Corpus",
+    "publication_date": "2025-01-15",
+    "language_code": "id",
+    "source_type": "SYNTHETIC_DEMO_GUIDELINE",
+    "is_synthetic_demo": true,
+    "body_text": "Data simulasi demonstrasi: Kebiasaan mencuci tangan menggunakan sabun dan air mengalir secara teratur membantu menurunkan risiko penularan infeksi saluran pencernaan seperti diare serta infeksi saluran pernapasan. Sabun membantu melarutkan lapisan lemak pada permukaan patogen dan mempermudah pembilasan mikroorganisme dari kulit. Praktik cuci tangan pakai sabun yang efektif dilakukan minimal 20 detik sebelum makan dan setelah menggunakan toilet."
+  },
+  {
+    "source_name": "VeriMed Demo Corpus — Edukasi Onkologi",
+    "source_url": "https://demo.verimed.local/synthetic/daun-sirsak-kanker",
+    "title": "[Contoh Simulasi] Evaluasi Klaim Ekstrak Daun Sirsak terhadap Kanker",
+    "authors": "VeriMed Synthetic Demo Corpus",
+    "publication_date": "2025-02-10",
+    "language_code": "id",
+    "source_type": "SYNTHETIC_DEMO_GUIDELINE",
+    "is_synthetic_demo": true,
+    "body_text": "Data simulasi demonstrasi: Belum ada bukti uji klinis pada manusia yang membuktikan bahwa rebusan daun sirsak dapat menyembuhkan semua jenis kanker atau tidak menggantikan terapi medis standar seperti kemoterapi dan radioterapi. Efek sitotoksik yang diamati pada cawan petri di laboratorium tidak otomatis berarti aman atau efektif sebagai pengobatan kanker pada tubuh manusia, dan menunda terapi medis dapat memperburuk prognosis pasien."
+  },
+  {
+    "source_name": "VeriMed Demo Corpus — Pengendalian Resistensi Antimikroba",
+    "source_url": "https://demo.verimed.local/synthetic/antibiotik-virus",
+    "title": "[Contoh Simulasi] Penggunaan Antibiotik pada Infeksi Virus vs Bakteri",
+    "authors": "VeriMed Synthetic Demo Corpus",
+    "publication_date": "2025-03-01",
+    "language_code": "id",
+    "source_type": "SYNTHETIC_DEMO_GUIDELINE",
+    "is_synthetic_demo": true,
+    "body_text": "Data simulasi demonstrasi: Antibiotik dirancang untuk mengatasi infeksi bakteri dan tidak efektif menyembuhkan flu atau pilek biasa yang disebabkan oleh virus. Penggunaan antibiotik tanpa indikasi medis dan resep dokter meningkatkan risiko resistensi antimikroba sehingga infeksi bakteri di masa depan menjadi lebih sulit diobati."
+  },
+  {
+    "source_name": "VeriMed Demo Corpus — Tinjauan Suplemen Harian",
+    "source_url": "https://demo.verimed.local/synthetic/vitamin-c-pencegahan",
+    "title": "[Contoh Simulasi] Suplementasi Vitamin C untuk Pencegahan Pilek",
+    "authors": "VeriMed Synthetic Demo Corpus",
+    "publication_date": "2025-01-28",
+    "language_code": "id",
+    "source_type": "SYNTHETIC_DEMO_REVIEW",
+    "is_synthetic_demo": true,
+    "body_text": "Data simulasi demonstrasi: Pada populasi umum, konsumsi rutin suplemen vitamin C dosis tinggi tidak terbukti secara konsisten mencegah timbulnya pilek biasa. Namun, sebagian studi menunjukkan suplementasi rutin berpotensi sedikit mempersingkat durasi gejala pada kelompok tertentu, sehingga temuan mengenai manfaat keseluruhannya bersifat beragam."
+  },
+  {
+    "source_name": "VeriMed Demo Corpus — Imunisasi Dasar",
+    "source_url": "https://demo.verimed.local/synthetic/imunisasi-dasar",
+    "title": "[Contoh Simulasi] Peran Imunisasi Dasar dalam Pencegahan Penyakit Menular",
+    "authors": "VeriMed Synthetic Demo Corpus",
+    "publication_date": "2025-02-20",
+    "language_code": "id",
+    "source_type": "SYNTHETIC_DEMO_GUIDELINE",
+    "is_synthetic_demo": true,
+    "body_text": "Data simulasi demonstrasi: Imunisasi dasar direkomendasikan dan terbukti efektif melindungi anak serta masyarakat dari berbagai penyakit menular berbahaya seperti campak, polio, dan difteri. Vaksinasi merangsang sistem kekebalan tubuh untuk membentuk antibodi spesifik secara aman sebelum terpapar patogen penyebab penyakit."
+  }
+]

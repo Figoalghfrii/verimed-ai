@@ -62,3 +62,17 @@ flowchart TD
 1. **Retrieval Metrics**: Recall@5, Recall@10, and Mean Reciprocal Rank (MRR) on curated Indonesian health claim pairs.
 2. **Stance Classification Metrics**: Macro-F1 across the 4 verdict classes and Abstention Precision on out-of-corpus claims.
 3. **Grounding & Citation Fidelity**: Percentage of generated sentences with verified supporting citation spans (target: 100% programmatic citation validity).
+
+---
+
+## 4. Phase 3 Configurable Runtime Backends
+
+The pipeline is configured via environment variables in `.env` (read by `verimed_api.core.config.Settings`):
+
+| Variable | Options / Default | Purpose |
+| --- | --- | --- |
+| `AI_PROVIDER` | `"mock"` (default), `"hybrid"`, `"configurable"` | Selects deterministic mock demo mode, PostgreSQL hybrid retrieval + grounded deterministic synthesis, or OpenAI-compatible grounded LLM synthesis. |
+| `EMBEDDING_BACKEND` | `"hash"` (default), `"sentence_transformers"` | Selects zero-download 768-d hash embeddings for offline dev/CI or `intfloat/multilingual-e5-base` (`pip install -e ".[ml]"`). |
+| `RERANKER_BACKEND` | `"lexical"` (default), `"cross_encoder"` | Selects deterministic token-overlap reranking or multilingual `cross-encoder/mmarco-mMiniLMv2-L12-H384-v1`. |
+| `RETRIEVAL_MIN_SCORE` | `0.35` | Minimum reranker score required before forcing `INSUFFICIENT_EVIDENCE` abstention. |
+| `LLM_BASE_URL` / `LLM_API_KEY` / `LLM_MODEL_NAME` | Empty / `"gpt-4o-mini"` | OpenAI-compatible endpoint used when `AI_PROVIDER=configurable`; falls back safely to deterministic grounded synthesis when unconfigured or on transport errors. |

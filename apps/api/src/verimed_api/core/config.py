@@ -36,10 +36,18 @@ class Settings(BaseSettings):
         "postgresql+psycopg://verimed:verimed_dev_password@localhost:5432/verimed_db"
     )
 
-    ai_provider: Literal["mock", "configurable"] = "mock"
+    ai_provider: Literal["mock", "hybrid", "configurable"] = "mock"
+    embedding_backend: Literal["hash", "sentence_transformers"] = "hash"
+    reranker_backend: Literal["lexical", "cross_encoder"] = "lexical"
     embedding_dimension: int = 768
     embedding_model_name: str = "intfloat/multilingual-e5-base"
     reranker_model_name: str = "cross-encoder/mmarco-mMiniLMv2-L12-H384-v1"
+    retrieval_min_score: float = 0.35
+
+    llm_base_url: str | None = None
+    llm_api_key: str | None = None
+    llm_model_name: str = "gpt-4o-mini"
+    llm_timeout_seconds: float = 20.0
 
     medical_disclaimer_id: str = (
         "VeriMed adalah platform edukasi verifikasi klaim kesehatan berbasis bukti ilmiah, "

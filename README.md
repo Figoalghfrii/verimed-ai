@@ -68,15 +68,26 @@ python -m venv .venv
 .\.venv\Scripts\Activate.ps1
 pip install -e ".[dev]"
 
+# Optional: install local sentence-transformers ML models for Phase 3 embeddings/reranking
+# pip install -e ".[ml]"
+
 # Run Alembic database migrations
 alembic upgrade head
+
+# Optional (Phase 3): seed synthetic demonstration evidence chunks into PostgreSQL
+# cd ..\..
+# .\apps\api\.venv\Scripts\python scripts\seed_demo_data.py
+# cd apps\api
 
 # Start FastAPI server on http://localhost:8000
 uvicorn verimed_api.main:app --reload --host 0.0.0.0 --port 8000
 ```
 
 - **Health Endpoint**: `http://localhost:8000/api/v1/health`
+- **Evidence Corpus Stats**: `http://localhost:8000/api/v1/evidence/stats`
 - **Interactive OpenAPI Docs**: `http://localhost:8000/api/v1/docs`
+
+> Set `AI_PROVIDER=hybrid` (or `configurable` with `LLM_BASE_URL` + `LLM_API_KEY`) in `.env` to verify claims against the seeded PostgreSQL `pgvector` + `tsvector` hybrid retriever instead of the default `mock` demo provider.
 
 ### Step 4: Set Up & Run Frontend (`apps/web`)
 In a separate terminal:

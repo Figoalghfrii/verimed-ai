@@ -58,6 +58,7 @@ class VerificationPipelineOrchestrator:
         explainer: GroundedExplainerProtocol,
         citation_validator: CitationValidatorProtocol,
         model_version: str = "mock-0.2.0",
+        min_rerank_score: float = 0.35,
     ) -> None:
         self._safety_guard = safety_guard
         self._claim_extractor = claim_extractor
@@ -68,6 +69,7 @@ class VerificationPipelineOrchestrator:
         self._explainer = explainer
         self._citation_validator = citation_validator
         self._model_version = model_version
+        self._min_rerank_score = min_rerank_score
 
     async def run(self, raw_text: str) -> PipelineExecutionOutput:
         """Execute input safety screening, extraction, retrieval, assessment, and citation check."""
@@ -93,7 +95,7 @@ class VerificationPipelineOrchestrator:
             reranked = await self._reranker.rerank(
                 claim_text=claim_text,
                 candidates=candidates,
-                min_score=0.35,
+                min_score=self._min_rerank_score,
             )
             assessment = await self._assessor.assess(
                 claim_text=claim_text,

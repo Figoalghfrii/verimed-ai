@@ -84,7 +84,7 @@ Checks service liveness, database connectivity, and `pgvector` extension readine
 ## 3. Phase 2 Implemented Verification Endpoint
 
 ### `POST /api/v1/verify`
-Evaluates a submitted health claim through the VeriMed verification pipeline (`MockPipelineProvider` in demonstration mode when `AI_PROVIDER=mock`).
+Evaluates a submitted health claim through the VeriMed verification pipeline (`mock`, `hybrid`, or `configurable` via `AI_PROVIDER`).
 
 #### Request Body
 ```json
@@ -108,3 +108,31 @@ Returns `ApiResponse[VerificationResponseData]`:
 - `CONTRADICTED` (*Bertentangan dengan Bukti*)
 - `MIXED_EVIDENCE` (*Bukti Beragam*)
 - `INSUFFICIENT_EVIDENCE` (*Bukti Tidak Cukup*)
+
+---
+
+## 4. Phase 3 Implemented Evidence Corpus Endpoint
+
+### `GET /api/v1/evidence/stats`
+Returns indexed evidence corpus counts (`documents_count`, `chunks_count`, `synthetic_documents_count`) along with the currently configured `ai_provider`, `embedding_backend`, and `reranker_backend`.
+
+#### Response `200 OK`
+```json
+{
+  "success": true,
+  "data": {
+    "documents_count": 5,
+    "chunks_count": 10,
+    "synthetic_documents_count": 5,
+    "ai_provider": "hybrid",
+    "embedding_backend": "hash",
+    "reranker_backend": "lexical"
+  },
+  "meta": {
+    "request_id": "8f9d2a1b-3c4e-4f5a-9b1c-2d3e4f5a6b7c",
+    "timestamp": "2026-10-31T05:15:00Z",
+    "api_version": "v1",
+    "is_demonstration": false
+  }
+}
+```
