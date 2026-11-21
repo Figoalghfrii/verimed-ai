@@ -1,0 +1,54 @@
+[
+  {
+    "id": "bench-01",
+    "claim_text": "Mencuci tangan pakai sabun dan air mengalir membantu menurunkan risiko infeksi diare.",
+    "expected_verdict": "SUPPORTED",
+    "relevant_source_urls": [
+      "https://demo.verimed.local/synthetic/ctps-infeksi"
+    ]
+  },
+  {
+    "id": "bench-02",
+    "claim_text": "Minum air rebusan daun sirsak dapat menyembuhkan semua jenis kanker tanpa kemoterapi.",
+    "expected_verdict": "CONTRADICTED",
+    "relevant_source_urls": [
+      "https://demo.verimed.local/synthetic/daun-sirsak-kanker"
+    ]
+  },
+  {
+    "id": "bench-03",
+    "claim_text": "Antibiotik efektif untuk menyembuhkan flu atau pilek biasa yang disebabkan oleh virus.",
+    "expected_verdict": "CONTRADICTED",
+    "relevant_source_urls": [
+      "https://demo.verimed.local/synthetic/antibiotik-virus"
+    ]
+  },
+  {
+    "id": "bench-04",
+    "claim_text": "Suplementasi vitamin C dosis tinggi secara rutin selalu mencegah timbulnya pilek pada semua orang.",
+    "expected_verdict": "MIXED_EVIDENCE",
+    "relevant_source_urls": [
+      "https://demo.verimed.local/synthetic/vitamin-c-pencegahan"
+    ]
+  },
+  {
+    "id": "bench-05",
+    "claim_text": "Imunisasi dasar efektif melindungi anak dari penyakit menular berbahaya seperti campak dan polio.",
+    "expected_verdict": "SUPPORTED",
+    "relevant_source_urls": [
+      "https://demo.verimed.local/synthetic/imunisasi-dasar"
+    ]
+  },
+  {
+    "id": "bench-06",
+    "claim_text": "Terapi gelombang kuantum dari luar angkasa menyembuhkan rabun jauh dalam semalam.",
+    "expected_verdict": "INSUFFICIENT_EVIDENCE",
+    "relevant_source_urls": []
+  },
+  {
+    "id": "bench-07",
+    "claim_text": "Mengoleskan pasta gigi merek tertentu ke lutut dapat menumbuhkan tulang rawan baru dalam dua hari.",
+    "expected_verdict": "INSUFFICIENT_EVIDENCE",
+    "relevant_source_urls": []
+  }
+]
