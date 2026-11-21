@@ -28,6 +28,8 @@ class Settings(BaseSettings):
     cors_origins: list[str] = Field(
         default_factory=lambda: ["http://localhost:3000", "http://127.0.0.1:3000"]
     )
+    rate_limit_enabled: bool = True
+    rate_limit_requests_per_minute: int = 60
 
     database_url: str = (
         "postgresql+asyncpg://verimed:verimed_dev_password@localhost:5432/verimed_db"

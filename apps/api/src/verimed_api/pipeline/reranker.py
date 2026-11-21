@@ -61,9 +61,12 @@ class LexicalOverlapReranker:
             else:
                 overlap = 0.0
 
+            if overlap < 0.25:
+                continue
+
             combined = min(
                 1.0,
-                round(0.45 * candidate.hybrid_score + 0.55 * overlap, 4),
+                round(0.25 * candidate.hybrid_score + 0.75 * overlap, 4),
             )
             if combined >= min_score:
                 rescored.append(replace(candidate, rerank_score=combined))

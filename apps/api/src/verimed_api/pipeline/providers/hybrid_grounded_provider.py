@@ -68,9 +68,15 @@ class HybridGroundedAssessor:
                 ),
             )
 
-        stances = {_infer_chunk_stance(chunk.chunk_text) for chunk in evidence}
-        has_mixed_cue = any(MIXED_CUES_RE.search(chunk.chunk_text) for chunk in evidence)
         top_score = evidence[0].rerank_score
+        focused_evidence = [
+            chunk
+            for chunk in evidence
+            if chunk.rerank_score >= max(self._min_confidence, top_score * 0.65)
+        ] or [evidence[0]]
+
+        stances = {_infer_chunk_stance(chunk.chunk_text) for chunk in focused_evidence}
+        has_mixed_cue = any(MIXED_CUES_RE.search(chunk.chunk_text) for chunk in focused_evidence)
 
         if has_mixed_cue or ("SUPPORTING" in stances and "CONTRADICTING" in stances):
             verdict: VerdictType = "MIXED_EVIDENCE"
