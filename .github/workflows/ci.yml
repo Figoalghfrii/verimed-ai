@@ -30,7 +30,7 @@ jobs:
           ruff format --check apps/api ml/evaluation scripts
 
       - name: Run backend and ML pytest suites
-        run: pytest apps/api/tests ml/evaluation/test_evaluation_metrics.py -v
+        run: python -m pytest apps/api/tests ml/evaluation/test_evaluation_metrics.py -v
 
       - name: Run offline ML benchmarks (synthetic & curated)
         run: |
