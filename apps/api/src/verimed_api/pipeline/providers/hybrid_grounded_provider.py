@@ -15,7 +15,8 @@ from verimed_api.pipeline.interfaces import (
 
 CONTRADICTION_CUES_RE = re.compile(
     r"\b(tidak\s+efektif|tidak\s+terbukti|belum\s+ada\s+bukti|bukan\s+obat|"
-    r"tidak\s+dapat\s+menyembuhkan|tidak\s+menggantikan|mitos|keliru)\b",
+    r"tidak\s+dapat\s+menyembuhkan|tidak\s+menggantikan|tidak\s+benar|tidak\s+aman|"
+    r"mitos|keliru)\b",
     re.IGNORECASE,
 )
 SUPPORT_CUES_RE = re.compile(
