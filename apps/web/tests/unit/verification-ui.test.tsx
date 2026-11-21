@@ -5,6 +5,12 @@ import { describe, expect, it, vi } from "vitest";
 import { ClaimInputForm } from "@/features/verification/components/claim-input-form";
 import { FeedbackWidget } from "@/features/verification/components/feedback-widget";
 import { VerificationResultView } from "@/features/verification/components/verification-result-view";
+import {
+  clearVerificationHistory,
+  formatWhatsAppSummary,
+  loadVerificationHistory,
+  saveVerificationToHistory,
+} from "@/features/verification/lib/verification-history";
 import { VerificationResponseData } from "@/features/verification/schemas/verification-schema";
 
 function renderWithQueryClient(ui: React.ReactElement) {
@@ -208,5 +214,86 @@ describe("FeedbackWidget", () => {
     ).toBeInTheDocument();
     expect(fetchSpy).not.toHaveBeenCalled();
     fetchSpy.mockRestore();
+  });
+});
+
+describe("WhatsApp summary & local verification history", () => {
+  const sampleResult: VerificationResponseData = {
+    request_id: "55555555-5555-5555-5555-555555555555",
+    status: "COMPLETED",
+    language: "id",
+    is_demonstration: false,
+    persisted: true,
+    emergency_triggered: false,
+    emergency_guidance: null,
+    processing_time_ms: 14,
+    model_version: "hybrid-0.1.0",
+    disclaimer: "Bukan alat diagnosis medis.",
+    claims: [
+      {
+        claim_index: 1,
+        claim_text: "Cuci tangan pakai sabun menurunkan risiko diare.",
+        normalized_query: "cuci tangan sabun diare",
+        verdict: "SUPPORTED",
+        verdict_label_id: "Didukung Bukti",
+        confidence_score: 0.91,
+        abstained: false,
+        abstention_reason: null,
+        explanation: "CTPS efektif menurunkan risiko penularan diare [1].",
+        uncertainty_notes: "Berdasarkan korpus terkurasi.",
+        citations_valid: true,
+        sources: [
+          {
+            chunk_id: "c1",
+            citation_key: "[1]",
+            source_name: "Kementerian Kesehatan RI",
+            source_type: "OFFICIAL_GUIDELINE",
+            title: "Cuci Tangan Pakai Sabun",
+            source_url: "https://kemkes.go.id/id/ctps",
+            publication_date: null,
+            excerpt: "CTPS menurunkan risiko diare.",
+            stance: "SUPPORTING",
+            relevance_score: 0.91,
+            is_synthetic_demo: false,
+          },
+        ],
+      },
+    ],
+  };
+
+  it("formats WhatsApp summary and copies it to clipboard on button click", async () => {
+    const writeText = vi.fn().mockResolvedValue(undefined);
+    Object.assign(navigator, { clipboard: { writeText } });
+
+    const text = formatWhatsAppSummary(sampleResult);
+    expect(text).toContain("*VeriMed — Ringkasan Pemeriksaan Bukti*");
+    expect(text).toContain("Didukung Bukti (91% keyakinan)");
+    expect(text).toContain("https://kemkes.go.id/id/ctps");
+
+    renderWithQueryClient(<VerificationResultView result={sampleResult} />);
+    fireEvent.click(
+      screen.getByRole("button", { name: "Salin Ringkasan Bukti" })
+    );
+
+    await waitFor(() => {
+      expect(
+        screen.getByRole("button", { name: "Ringkasan Disalin!" })
+      ).toBeInTheDocument();
+    });
+    expect(writeText).toHaveBeenCalledWith(text);
+  });
+
+  it("saves, loads, and clears local verification history safely", () => {
+    clearVerificationHistory();
+    expect(loadVerificationHistory()).toEqual([]);
+
+    const saved = saveVerificationToHistory(sampleResult);
+    expect(saved).toHaveLength(1);
+    expect(loadVerificationHistory()[0]?.result.request_id).toBe(
+      "55555555-5555-5555-5555-555555555555"
+    );
+
+    clearVerificationHistory();
+    expect(loadVerificationHistory()).toEqual([]);
   });
 });

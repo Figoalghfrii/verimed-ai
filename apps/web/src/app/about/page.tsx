@@ -95,12 +95,29 @@ export default function AboutPage() {
             medis mutlak.
           </li>
           <li>
-            <strong>Status MVP Saat Ini:</strong> Pada fase pengembangan ini,
-            pipeline berjalan dengan penyedia data simulasi deterministik (
+            <strong>Mode Operasional Fleksibel:</strong> VeriMed mendukung mode
+            demonstrasi deterministik (
             <code className="rounded-md bg-slate-100 px-1.5 py-0.5 font-mono text-xs">
               AI_PROVIDER=mock
             </code>
-            ) sebelum pengindeksan korpus medis produksi.
+            ), mode <em>hybrid retrieval</em> lokal berbasis PostgreSQL{" "}
+            <code className="rounded-md bg-slate-100 px-1.5 py-0.5 font-mono text-xs">
+              pgvector
+            </code>{" "}
+            +{" "}
+            <code className="rounded-md bg-slate-100 px-1.5 py-0.5 font-mono text-xs">
+              tsvector
+            </code>{" "}
+            (
+            <code className="rounded-md bg-slate-100 px-1.5 py-0.5 font-mono text-xs">
+              AI_PROVIDER=hybrid
+            </code>
+            ), serta integrasi model bahasa eksternal tergrounding dengan
+            validasi sitasi terprogram (
+            <code className="rounded-md bg-slate-100 px-1.5 py-0.5 font-mono text-xs">
+              AI_PROVIDER=configurable
+            </code>
+            ).
           </li>
         </ul>
         <div className="pt-2">

@@ -1,6 +1,9 @@
-import React from "react";
+"use client";
+
+import React, { useState } from "react";
 import { Badge } from "@/components/ui/badge";
 import { Card } from "@/components/ui/card";
+import { formatWhatsAppSummary } from "../lib/verification-history";
 import { VerificationResponseData } from "../schemas/verification-schema";
 import { AssessmentBadge } from "./assessment-badge";
 import { EmergencyAlert } from "./emergency-alert";
@@ -12,6 +15,21 @@ export function VerificationResultView({
 }: {
   result: VerificationResponseData;
 }) {
+  const [copyStatus, setCopyStatus] = useState<"idle" | "copied" | "failed">(
+    "idle"
+  );
+
+  const handleCopySummary = async () => {
+    try {
+      const summary = formatWhatsAppSummary(result);
+      await navigator.clipboard.writeText(summary);
+      setCopyStatus("copied");
+      window.setTimeout(() => setCopyStatus("idle"), 2500);
+    } catch {
+      setCopyStatus("failed");
+    }
+  };
+
   return (
     <section
       aria-labelledby="verification-result-heading"
@@ -31,6 +49,19 @@ export function VerificationResultView({
           <span className="rounded-full bg-white px-3 py-1 font-medium text-slate-600 shadow-sm">
             Waktu proses: {result.processing_time_ms} ms
           </span>
+          {!result.emergency_triggered && result.claims.length > 0 && (
+            <button
+              type="button"
+              onClick={() => void handleCopySummary()}
+              className="inline-flex items-center rounded-full border border-brand-200 bg-white px-3.5 py-1.5 text-xs font-semibold text-brand-700 shadow-sm transition hover:border-brand-400 hover:bg-brand-50"
+            >
+              {copyStatus === "copied"
+                ? "Ringkasan Disalin!"
+                : copyStatus === "failed"
+                  ? "Gagal Menyalin"
+                  : "Salin Ringkasan Bukti"}
+            </button>
+          )}
         </div>
       </div>
 
