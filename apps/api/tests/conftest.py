@@ -7,6 +7,7 @@ import pytest
 from httpx import ASGITransport, AsyncClient
 
 from verimed_api.api.deps import (
+    get_feedback_service,
     get_health_service,
     get_ingestion_service,
     get_verification_service,
@@ -25,6 +26,7 @@ from verimed_api.pipeline.query_normalizer import IndonesianQueryNormalizer
 from verimed_api.pipeline.safety_guard import SafetyGuard
 from verimed_api.repositories.evidence_repo import EvidenceCorpusStats
 from verimed_api.schemas.health import DatabaseHealthStatus
+from verimed_api.services.feedback_service import FeedbackService
 from verimed_api.services.health_service import HealthService
 from verimed_api.services.ingestion_service import IngestionService
 from verimed_api.services.verification_service import VerificationService
@@ -82,6 +84,46 @@ class StubEvidenceRepository:
         )
 
 
+class StubFeedbackRepository:
+    """In-memory stub repository for user feedback endpoint tests."""
+
+    def __init__(self, known_requests: list[uuid.UUID]) -> None:
+        self._known_requests = known_requests
+        self.saved_feedback: list[dict[str, object]] = []
+
+    async def request_exists(self, request_id: uuid.UUID) -> bool:
+        return request_id in self._known_requests
+
+    async def assessment_belongs_to_request(
+        self,
+        assessment_id: uuid.UUID,
+        request_id: uuid.UUID,
+    ) -> bool:
+        del assessment_id
+        return request_id in self._known_requests
+
+    async def create_feedback(
+        self,
+        *,
+        feedback_id: uuid.UUID,
+        request_id: uuid.UUID,
+        assessment_id: uuid.UUID | None,
+        is_helpful: bool,
+        feedback_category: str | None,
+        comment_sanitized: str | None,
+    ) -> None:
+        self.saved_feedback.append(
+            {
+                "feedback_id": feedback_id,
+                "request_id": request_id,
+                "assessment_id": assessment_id,
+                "is_helpful": is_helpful,
+                "feedback_category": feedback_category,
+                "comment_sanitized": comment_sanitized,
+            }
+        )
+
+
 @pytest.fixture
 def test_settings() -> Settings:
     """Return deterministic test Settings."""
@@ -97,6 +139,8 @@ def test_settings() -> Settings:
 async def async_client(test_settings: Settings) -> AsyncGenerator[AsyncClient, None]:
     """Provide an HTTPX AsyncClient wired to FastAPI with stubbed repositories."""
     app = create_app()
+    verification_repo = StubVerificationRepository()
+    feedback_repo = StubFeedbackRepository(known_requests=verification_repo.saved_requests)
 
     def _override_health_service() -> HealthService:
         return HealthService(
@@ -120,7 +164,7 @@ async def async_client(test_settings: Settings) -> AsyncGenerator[AsyncClient, N
         )
         return VerificationService(
             orchestrator=orchestrator,
-            verification_repo=StubVerificationRepository(),  # type: ignore[arg-type]
+            verification_repo=verification_repo,  # type: ignore[arg-type]
             settings=test_settings,
         )
 
@@ -130,9 +174,13 @@ async def async_client(test_settings: Settings) -> AsyncGenerator[AsyncClient, N
             embedding_provider=DeterministicHashEmbeddingProvider(),
         )
 
+    def _override_feedback_service() -> FeedbackService:
+        return FeedbackService(feedback_repo=feedback_repo)  # type: ignore[arg-type]
+
     app.dependency_overrides[get_health_service] = _override_health_service
     app.dependency_overrides[get_verification_service] = _override_verification_service
     app.dependency_overrides[get_ingestion_service] = _override_ingestion_service
+    app.dependency_overrides[get_feedback_service] = _override_feedback_service
 
     transport = ASGITransport(app=app)
     async with AsyncClient(transport=transport, base_url="http://testserver") as client:
