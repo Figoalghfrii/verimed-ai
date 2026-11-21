@@ -16,9 +16,9 @@
 - [x] Build interactive Claim Verification UI (`/verify`) and Methodology page (`/about`) with source cards, verdict badges, uncertainty callouts, and emergency safety banner.
 
 ## Phase 3: Curated Evidence Ingestion & Hybrid Retrieval
-- [ ] Build reproducible ingestion scripts for trusted public health sources (WHO, Kemenkes RI, BPOM, open-access biomedical summaries).
-- [ ] Integrate local multilingual embedding generation (`intfloat/multilingual-e5-base`) and `pgvector` HNSW indexing + PostgreSQL `tsvector` lexical search.
-- [ ] Integrate cross-encoder reranking and configurable grounded LLM generation with citation validation.
+- [x] Build reproducible ingestion scripts for trusted public health sources (WHO, Kemenkes RI, BPOM, open-access biomedical summaries).
+- [x] Integrate local multilingual embedding generation (`intfloat/multilingual-e5-base`) and `pgvector` HNSW indexing + PostgreSQL `tsvector` lexical search.
+- [x] Integrate cross-encoder reranking and configurable grounded LLM generation with citation validation.
 
 ## Phase 4: Evaluation, Hardening & User Feedback Loop
 - [ ] Implement `POST /api/v1/feedback` for user clarity ratings.
