@@ -5,6 +5,7 @@ import { VerificationResponseData } from "../schemas/verification-schema";
 import { AssessmentBadge } from "./assessment-badge";
 import { EmergencyAlert } from "./emergency-alert";
 import { EvidenceSourceCard } from "./evidence-source-card";
+import { FeedbackWidget } from "./feedback-widget";
 
 export function VerificationResultView({
   result,
@@ -125,6 +126,13 @@ export function VerificationResultView({
             </div>
           </Card>
         ))}
+
+      {!result.emergency_triggered && (
+        <FeedbackWidget
+          requestId={result.request_id}
+          persisted={result.persisted}
+        />
+      )}
 
       <div
         role="note"

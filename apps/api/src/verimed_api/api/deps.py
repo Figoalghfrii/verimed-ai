@@ -35,8 +35,10 @@ from verimed_api.pipeline.reranker import CrossEncoderReranker, LexicalOverlapRe
 from verimed_api.pipeline.retriever import HybridPgVectorRetriever
 from verimed_api.pipeline.safety_guard import SafetyGuard
 from verimed_api.repositories.evidence_repo import EvidenceRepository
+from verimed_api.repositories.feedback_repo import FeedbackRepository
 from verimed_api.repositories.health_repo import HealthRepository
 from verimed_api.repositories.verification_repo import VerificationRepository
+from verimed_api.services.feedback_service import FeedbackService
 from verimed_api.services.health_service import HealthService
 from verimed_api.services.ingestion_service import IngestionService
 from verimed_api.services.verification_service import VerificationService
@@ -90,6 +92,12 @@ def get_ingestion_service(
         evidence_repo=evidence_repo,
         embedding_provider=embedding_provider,
     )
+
+
+def get_feedback_service(session: DbSessionDep) -> FeedbackService:
+    """Provide configured FeedbackService instance."""
+    repo = FeedbackRepository(session=session)
+    return FeedbackService(feedback_repo=repo)
 
 
 def get_verification_service(

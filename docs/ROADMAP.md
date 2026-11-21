@@ -21,6 +21,6 @@
 - [x] Integrate cross-encoder reranking and configurable grounded LLM generation with citation validation.
 
 ## Phase 4: Evaluation, Hardening & User Feedback Loop
-- [ ] Implement `POST /api/v1/feedback` for user clarity ratings.
-- [ ] Execute retrieval Recall@K, stance Macro-F1, and citation fidelity evaluation suite in `ml/evaluation/`.
-- [ ] Add end-to-end Playwright browser tests and rate-limiting middleware.
+- [x] Implement `POST /api/v1/feedback` for user clarity ratings.
+- [x] Execute retrieval Recall@K, stance Macro-F1, and citation fidelity evaluation suite in `ml/evaluation/`.
+- [x] Add end-to-end Playwright browser tests and rate-limiting middleware.

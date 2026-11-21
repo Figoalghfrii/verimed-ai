@@ -1,0 +1,52 @@
+"""Pydantic v2 schemas for user clarity feedback endpoints."""
+
+import uuid
+from typing import Literal
+
+from pydantic import BaseModel, ConfigDict, Field, field_validator
+
+from verimed_api.core.security import sanitize_user_text
+
+FeedbackCategory = Literal[
+    "CLARITY",
+    "CITATIONS",
+    "ACCURACY_CONCERN",
+    "OTHER",
+]
+
+
+class FeedbackRequestInput(BaseModel):
+    """Anonymous user rating payload for a completed verification response."""
+
+    model_config = ConfigDict(extra="forbid")
+
+    request_id: uuid.UUID
+    assessment_id: uuid.UUID | None = None
+    is_helpful: bool
+    feedback_category: FeedbackCategory | None = None
+    comment: str | None = Field(
+        default=None,
+        max_length=500,
+        description="Optional sanitized feedback comment up to 500 characters.",
+    )
+
+    @field_validator("comment", mode="before")
+    @classmethod
+    def sanitize_optional_comment(cls, value: object) -> object:
+        if isinstance(value, str):
+            cleaned = sanitize_user_text(value)
+            return cleaned if cleaned else None
+        return value
+
+
+class FeedbackResponseData(BaseModel):
+    """Structured response payload returned by POST /api/v1/feedback."""
+
+    model_config = ConfigDict(extra="forbid")
+
+    feedback_id: str
+    request_id: str
+    is_helpful: bool
+    feedback_category: FeedbackCategory | None = None
+    persisted: bool
+    message: str

@@ -110,12 +110,19 @@ cd apps/api
 .\.venv\Scripts\python -m pytest -v
 ```
 
+### Offline ML Evaluation (`ml/evaluation/`)
+```powershell
+.\apps\api\.venv\Scripts\python ml\evaluation\run_evaluation.py
+.\apps\api\.venv\Scripts\python -m pytest ml\evaluation\test_evaluation_metrics.py -v
+```
+
 ### Frontend (`apps/web`)
 ```powershell
 cd apps/web
 npm run typecheck
 npm run lint
 npm test
+npm run test:e2e
 npm run build
 ```
 
