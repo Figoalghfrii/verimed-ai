@@ -6,7 +6,11 @@ from collections.abc import AsyncGenerator
 import pytest
 from httpx import ASGITransport, AsyncClient
 
-from verimed_api.api.deps import get_health_service, get_verification_service
+from verimed_api.api.deps import (
+    get_health_service,
+    get_ingestion_service,
+    get_verification_service,
+)
 from verimed_api.core.config import Settings
 from verimed_api.main import create_app
 from verimed_api.pipeline.citation_validator import ProgrammaticCitationValidator
@@ -15,11 +19,14 @@ from verimed_api.pipeline.orchestrator import (
     PipelineExecutionOutput,
     VerificationPipelineOrchestrator,
 )
+from verimed_api.pipeline.providers.embedding_provider import DeterministicHashEmbeddingProvider
 from verimed_api.pipeline.providers.mock_provider import MockPipelineProvider
 from verimed_api.pipeline.query_normalizer import IndonesianQueryNormalizer
 from verimed_api.pipeline.safety_guard import SafetyGuard
+from verimed_api.repositories.evidence_repo import EvidenceCorpusStats
 from verimed_api.schemas.health import DatabaseHealthStatus
 from verimed_api.services.health_service import HealthService
+from verimed_api.services.ingestion_service import IngestionService
 from verimed_api.services.verification_service import VerificationService
 
 
@@ -64,6 +71,17 @@ class StubVerificationRepository:
         self.saved_requests.append(request_id)
 
 
+class StubEvidenceRepository:
+    """In-memory stub repository for evidence stats endpoint tests."""
+
+    async def get_corpus_stats(self) -> EvidenceCorpusStats:
+        return EvidenceCorpusStats(
+            documents_count=5,
+            chunks_count=10,
+            synthetic_documents_count=5,
+        )
+
+
 @pytest.fixture
 def test_settings() -> Settings:
     """Return deterministic test Settings."""
@@ -106,8 +124,15 @@ async def async_client(test_settings: Settings) -> AsyncGenerator[AsyncClient, N
             settings=test_settings,
         )
 
+    def _override_ingestion_service() -> IngestionService:
+        return IngestionService(
+            evidence_repo=StubEvidenceRepository(),  # type: ignore[arg-type]
+            embedding_provider=DeterministicHashEmbeddingProvider(),
+        )
+
     app.dependency_overrides[get_health_service] = _override_health_service
     app.dependency_overrides[get_verification_service] = _override_verification_service
+    app.dependency_overrides[get_ingestion_service] = _override_ingestion_service
 
     transport = ASGITransport(app=app)
     async with AsyncClient(transport=transport, base_url="http://testserver") as client:
