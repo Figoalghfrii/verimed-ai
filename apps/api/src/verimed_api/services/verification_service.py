@@ -36,13 +36,18 @@ class VerificationService:
         output = await self._orchestrator.run(payload.text)
         processing_time_ms = max(1, int((time.perf_counter() - start) * 1000))
 
+        uses_synthetic_sources = any(
+            src.is_synthetic_demo for claim in output.claims for src in claim.sources
+        )
+        is_demo = self._settings.is_demonstration_mode or uses_synthetic_sources
+
         persisted = False
         try:
             await self._verification_repo.save_verification_result(
                 request_id=request_id,
                 input_text=payload.text,
                 language_code=payload.language,
-                is_demonstration=self._settings.is_demonstration_mode,
+                is_demonstration=is_demo,
                 processing_time_ms=processing_time_ms,
                 output=output,
             )
@@ -58,7 +63,7 @@ class VerificationService:
             request_id=str(request_id),
             status="EMERGENCY_HALT" if output.emergency_triggered else "COMPLETED",
             language=payload.language,
-            is_demonstration=self._settings.is_demonstration_mode,
+            is_demonstration=is_demo,
             persisted=persisted,
             emergency_triggered=output.emergency_triggered,
             emergency_guidance=output.emergency_guidance,

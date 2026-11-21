@@ -24,3 +24,16 @@ class EvidenceSourceItem(BaseModel):
     stance: CitationStance
     relevance_score: float = Field(..., ge=0.0, le=1.0)
     is_synthetic_demo: bool = True
+
+
+class EvidenceStatsData(BaseModel):
+    """Summary counts of indexed documents and chunks returned by GET /api/v1/evidence/stats."""
+
+    model_config = ConfigDict(extra="forbid")
+
+    documents_count: int = Field(..., ge=0)
+    chunks_count: int = Field(..., ge=0)
+    synthetic_documents_count: int = Field(..., ge=0)
+    ai_provider: str
+    embedding_backend: str
+    reranker_backend: str

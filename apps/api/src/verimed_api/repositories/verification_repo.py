@@ -1,9 +1,10 @@
-"""Repository for persisting verification requests, claims, and assessments."""
+"""Repository for persisting verification requests, claims, assessments, and citations."""
 
 import uuid
 
 from sqlalchemy.ext.asyncio import AsyncSession
 
+from verimed_api.models.evidence import Citation
 from verimed_api.models.verification import (
     ClaimAssessment,
     ExtractedClaim,
@@ -12,8 +13,15 @@ from verimed_api.models.verification import (
 from verimed_api.pipeline.orchestrator import PipelineExecutionOutput
 
 
+def _try_parse_uuid(value: str) -> uuid.UUID | None:
+    try:
+        return uuid.UUID(value)
+    except ValueError:
+        return None
+
+
 class VerificationRepository:
-    """Persists verification requests and structured claim assessments."""
+    """Persists verification requests, structured claim assessments, and DB citations."""
 
     def __init__(self, session: AsyncSession) -> None:
         self._session = session
@@ -28,7 +36,7 @@ class VerificationRepository:
         processing_time_ms: int,
         output: PipelineExecutionOutput,
     ) -> None:
-        """Persist a verification request, extracted claims, and assessments."""
+        """Persist a verification request, extracted claims, assessments, and citations."""
         status = "EMERGENCY_HALT" if output.emergency_triggered else "COMPLETED"
 
         req_row = VerificationRequest(
@@ -56,7 +64,9 @@ class VerificationRepository:
             )
             self._session.add(claim_row)
 
+            assessment_id = uuid.uuid4()
             assessment_row = ClaimAssessment(
+                id=assessment_id,
                 claim_id=claim_id,
                 verdict=claim.verdict,
                 confidence_score=claim.confidence_score,
@@ -65,8 +75,21 @@ class VerificationRepository:
                 explanation_text=claim.explanation,
                 uncertainty_notes=claim.uncertainty_notes,
                 model_name=output.model_version,
-                prompt_version="phase2-mvp-v1",
+                prompt_version="phase3-hybrid-v1",
             )
             self._session.add(assessment_row)
+
+            for source in claim.sources:
+                parsed_chunk_id = _try_parse_uuid(source.chunk_id)
+                if parsed_chunk_id is not None:
+                    self._session.add(
+                        Citation(
+                            assessment_id=assessment_id,
+                            chunk_id=parsed_chunk_id,
+                            citation_key=source.citation_key,
+                            stance=source.stance,
+                            quoted_span=source.excerpt[:500],
+                        )
+                    )
 
         await self._session.commit()
