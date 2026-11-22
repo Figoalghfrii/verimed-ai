@@ -30,3 +30,9 @@
 - [x] Curate verified Kemenkes RI, WHO, and BPOM public health corpus (`ml/data/curated_public_health_corpus.json`) with `is_synthetic_demo: false`.
 - [x] Add WhatsApp-ready shareable evidence summary copy button and privacy-safe local browser history in `/verify`.
 - [x] Configure GitHub Actions CI workflow (`.github/workflows/ci.yml`) and verify Next.js production build.
+
+## Phase 6: Corpus Explorer, Retrieval Audit & Production Readiness
+- [x] Add `GET /api/v1/evidence/documents` and `/corpus` browser page with source filtering and search.
+- [x] Persist `retrieval_results` audit rows in `VerificationRepository` and expand Indonesian medical synonyms (`campak`, `jamu`, `herbal`, `bko`, `diabetes`, `hipertensi`, `GGL`).
+- [x] Add `GET /api/v1/feedback/stats` anonymous clarity summary, `/verify` language toggle (`id`/`en`), and curated sample pills.
+- [x] Harden `api.Dockerfile`, `web.Dockerfile` (multi-stage production build), `compose.yaml`, and author `docs/DEPLOYMENT.md`.

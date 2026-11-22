@@ -42,3 +42,23 @@ export const FeedbackApiResponseSchema = z.object({
 });
 
 export type FeedbackApiResponse = z.infer<typeof FeedbackApiResponseSchema>;
+
+export const FeedbackStatsDataSchema = z.object({
+  total_count: z.number().int().nonnegative(),
+  helpful_count: z.number().int().nonnegative(),
+  not_helpful_count: z.number().int().nonnegative(),
+  helpful_rate: z.number().min(0).max(1),
+  by_category: z.record(z.string(), z.number().int().nonnegative()),
+  database_connected: z.boolean(),
+});
+
+export const FeedbackStatsApiResponseSchema = z.object({
+  success: z.literal(true),
+  data: FeedbackStatsDataSchema,
+  meta: ResponseMetaSchema,
+});
+
+export type FeedbackStatsData = z.infer<typeof FeedbackStatsDataSchema>;
+export type FeedbackStatsApiResponse = z.infer<
+  typeof FeedbackStatsApiResponseSchema
+>;

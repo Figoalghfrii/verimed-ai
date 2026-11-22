@@ -50,3 +50,16 @@ class FeedbackResponseData(BaseModel):
     feedback_category: FeedbackCategory | None = None
     persisted: bool
     message: str
+
+
+class FeedbackStatsData(BaseModel):
+    """Aggregated anonymous user clarity ratings returned by GET /api/v1/feedback/stats."""
+
+    model_config = ConfigDict(extra="forbid")
+
+    total_count: int = Field(..., ge=0)
+    helpful_count: int = Field(..., ge=0)
+    not_helpful_count: int = Field(..., ge=0)
+    helpful_rate: float = Field(..., ge=0.0, le=1.0)
+    by_category: dict[str, int] = Field(default_factory=dict)
+    database_connected: bool

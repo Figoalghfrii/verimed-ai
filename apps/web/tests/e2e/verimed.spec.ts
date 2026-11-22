@@ -227,9 +227,28 @@ test.describe("VeriMed End-to-End Flows", () => {
     ).toBeVisible();
   });
 
-  test("about page explains methodology pipeline and safety limits", async ({
+  test("about page explains methodology pipeline, safety limits, and feedback stats", async ({
     page,
   }) => {
+    await page.route("**/api/v1/feedback/stats", async (route) => {
+      await route.fulfill({
+        status: 200,
+        contentType: "application/json",
+        body: JSON.stringify({
+          success: true,
+          data: {
+            total_count: 10,
+            helpful_count: 9,
+            not_helpful_count: 1,
+            helpful_rate: 0.9,
+            by_category: { CLARITY: 8, CITATIONS: 2 },
+            database_connected: true,
+          },
+          meta: META,
+        }),
+      });
+    });
+
     await page.goto("/about");
     await expect(
       page.getByRole("heading", {
@@ -239,5 +258,55 @@ test.describe("VeriMed End-to-End Flows", () => {
     await expect(
       page.getByText(/Validasi Input & Gerbang Darurat Medis/i)
     ).toBeVisible();
+    await expect(page.getByText("90%")).toBeVisible();
+  });
+
+  test("corpus page lists indexed curated sources and supports filtering", async ({
+    page,
+  }) => {
+    await page.route("**/api/v1/evidence/documents*", async (route) => {
+      await route.fulfill({
+        status: 200,
+        contentType: "application/json",
+        body: JSON.stringify({
+          success: true,
+          data: {
+            items: [
+              {
+                id: "aaaaaaaa-aaaa-aaaa-aaaa-aaaaaaaaaaaa",
+                source_name: "Kementerian Kesehatan RI",
+                source_url:
+                  "https://kemkes.go.id/id/cuci-tangan-pakai-sabun-perilaku-sederhana-berdampak-luar-biasa",
+                title:
+                  "Cuci Tangan Pakai Sabun, Perilaku Sederhana Berdampak Luar Biasa",
+                authors: "Kementerian Kesehatan Republik Indonesia",
+                publication_date: null,
+                language_code: "id",
+                source_type: "OFFICIAL_GUIDELINE",
+                chunks_count: 2,
+                is_synthetic_demo: false,
+                retrieved_at: "2026-11-22T05:00:00Z",
+              },
+            ],
+            total: 1,
+            limit: 20,
+            offset: 0,
+            database_connected: true,
+          },
+          meta: { ...META, is_demonstration: false },
+        }),
+      });
+    });
+
+    await page.goto("/corpus");
+    await expect(
+      page.getByRole("heading", { name: /Direktori Korpus Bukti Publik/i })
+    ).toBeVisible();
+    await expect(
+      page.getByText(
+        "Cuci Tangan Pakai Sabun, Perilaku Sederhana Berdampak Luar Biasa"
+      )
+    ).toBeVisible();
+    await expect(page.getByText("Terkurasi", { exact: true })).toBeVisible();
   });
 });

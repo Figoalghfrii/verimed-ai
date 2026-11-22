@@ -87,6 +87,30 @@ const NAV_ITEMS: NavItem[] = [
     ),
   },
   {
+    href: "/corpus",
+    label: "Korpus Bukti",
+    icon: (
+      <svg
+        aria-hidden="true"
+        viewBox="0 0 20 20"
+        fill="none"
+        className="h-4 w-4"
+      >
+        <path
+          d="M3.5 5.5A2 2 0 015.5 3.5h9a2 2 0 012 2v9a2 2 0 01-2 2h-9a2 2 0 01-2-2v-9z"
+          stroke="currentColor"
+          strokeWidth="1.6"
+        />
+        <path
+          d="M6.5 7.5h7M6.5 10.5h7M6.5 13.5h4.5"
+          stroke="currentColor"
+          strokeWidth="1.6"
+          strokeLinecap="round"
+        />
+      </svg>
+    ),
+  },
+  {
     href: "/about",
     label: "Metodologi",
     icon: (

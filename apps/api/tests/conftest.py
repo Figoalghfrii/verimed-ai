@@ -2,6 +2,7 @@
 
 import uuid
 from collections.abc import AsyncGenerator
+from datetime import UTC, datetime
 
 import pytest
 from httpx import ASGITransport, AsyncClient
@@ -24,7 +25,11 @@ from verimed_api.pipeline.providers.embedding_provider import DeterministicHashE
 from verimed_api.pipeline.providers.mock_provider import MockPipelineProvider
 from verimed_api.pipeline.query_normalizer import IndonesianQueryNormalizer
 from verimed_api.pipeline.safety_guard import SafetyGuard
-from verimed_api.repositories.evidence_repo import EvidenceCorpusStats
+from verimed_api.repositories.evidence_repo import (
+    EvidenceCorpusStats,
+    EvidenceDocumentSummary,
+)
+from verimed_api.repositories.feedback_repo import FeedbackStatsSummary
 from verimed_api.schemas.health import DatabaseHealthStatus
 from verimed_api.services.feedback_service import FeedbackService
 from verimed_api.services.health_service import HealthService
@@ -74,7 +79,38 @@ class StubVerificationRepository:
 
 
 class StubEvidenceRepository:
-    """In-memory stub repository for evidence stats endpoint tests."""
+    """In-memory stub repository for evidence stats and documents endpoint tests."""
+
+    def __init__(self) -> None:
+        now = datetime(2026, 11, 22, 5, 0, tzinfo=UTC)
+        self._documents = [
+            EvidenceDocumentSummary(
+                id="aaaaaaaa-aaaa-aaaa-aaaa-aaaaaaaaaaaa",
+                source_name="Kementerian Kesehatan RI",
+                source_url="https://kemkes.go.id/id/cuci-tangan-pakai-sabun-perilaku-sederhana-berdampak-luar-biasa",
+                title="Cuci Tangan Pakai Sabun, Perilaku Sederhana Berdampak Luar Biasa",
+                authors="Kementerian Kesehatan Republik Indonesia",
+                publication_date=None,
+                language_code="id",
+                source_type="OFFICIAL_GUIDELINE",
+                chunks_count=2,
+                is_synthetic_demo=False,
+                retrieved_at=now,
+            ),
+            EvidenceDocumentSummary(
+                id="bbbbbbbb-bbbb-bbbb-bbbb-bbbbbbbbbbbb",
+                source_name="VeriMed Demo Corpus — Kebersihan Tangan",
+                source_url="https://demo.verimed.local/synthetic/ctps-infeksi",
+                title="[Contoh Simulasi] Efektivitas Cuci Tangan Pakai Sabun",
+                authors="VeriMed Synthetic Demo Corpus",
+                publication_date=None,
+                language_code="id",
+                source_type="SYNTHETIC_DEMO_GUIDELINE",
+                chunks_count=2,
+                is_synthetic_demo=True,
+                retrieved_at=now,
+            ),
+        ]
 
     async def get_corpus_stats(self) -> EvidenceCorpusStats:
         return EvidenceCorpusStats(
@@ -82,6 +118,29 @@ class StubEvidenceRepository:
             chunks_count=10,
             synthetic_documents_count=5,
         )
+
+    async def list_documents(
+        self,
+        *,
+        search: str | None = None,
+        source_type: str | None = None,
+        include_synthetic: bool = True,
+        limit: int = 20,
+        offset: int = 0,
+    ) -> tuple[list[EvidenceDocumentSummary], int]:
+        filtered = list(self._documents)
+        if not include_synthetic:
+            filtered = [doc for doc in filtered if not doc.is_synthetic_demo]
+        if source_type:
+            filtered = [doc for doc in filtered if doc.source_type == source_type]
+        if search:
+            needle = search.lower()
+            filtered = [
+                doc
+                for doc in filtered
+                if needle in doc.title.lower() or needle in doc.source_name.lower()
+            ]
+        return filtered[offset : offset + limit], len(filtered)
 
 
 class StubFeedbackRepository:
@@ -121,6 +180,21 @@ class StubFeedbackRepository:
                 "feedback_category": feedback_category,
                 "comment_sanitized": comment_sanitized,
             }
+        )
+
+    async def get_stats(self) -> FeedbackStatsSummary:
+        total = len(self.saved_feedback)
+        helpful = sum(1 for item in self.saved_feedback if item["is_helpful"] is True)
+        by_category: dict[str, int] = {}
+        for item in self.saved_feedback:
+            cat = item.get("feedback_category")
+            if isinstance(cat, str) and cat:
+                by_category[cat] = by_category.get(cat, 0) + 1
+        return FeedbackStatsSummary(
+            total_count=total,
+            helpful_count=helpful,
+            not_helpful_count=total - helpful,
+            by_category=by_category,
         )
 
 

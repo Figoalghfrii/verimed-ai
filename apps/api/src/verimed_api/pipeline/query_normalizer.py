@@ -1,21 +1,35 @@
-"""Colloquial Indonesian-to-biomedical query normalization for Phase 2 MVP."""
+"""Colloquial Indonesian-to-biomedical query normalization for hybrid retrieval."""
 
 import re
 
 INDONESIAN_MEDICAL_SYNONYMS: dict[str, str] = {
     "sirsak": "daun sirsak annona muricata kanker kemoterapi",
     "kanker": "kanker neoplasma onkologi kemoterapi",
-    "antibiotik": "antibiotik resistensi antimikroba infeksi bakteri virus",
+    "jamu": "obat tradisional jamu herbal bpom uji klinis",
+    "herbal": "obat bahan alam tradisional jamu bpom keamanan",
+    "obat tradisional": "obat tradisional jamu herbal bpom uji klinis",
+    "bko": "bahan kimia obat obat bahan alam ilegal bpom",
+    "bahan kimia obat": "bko obat bahan alam ilegal bpom deksametason sildenafil",
+    "antibiotik": "antibiotik resistensi antimikroba amr infeksi bakteri virus",
     "flu": "influenza common cold infeksi saluran pernapasan virus",
     "pilek": "influenza common cold infeksi virus",
     "cuci tangan": "cuci tangan pakai sabun ctps higiene sanitasi infeksi diare",
     "sabun": "cuci tangan pakai sabun ctps pencegahan infeksi",
+    "diare": "diare infeksi saluran pencernaan ctps cuci tangan sanitasi",
     "vitamin c": "vitamin c asam askorbat imunitas common cold flu",
     "vaksin": "vaksinasi imunisasi kekebalan tubuh pencegahan penyakit",
     "imunisasi": "vaksinasi imunisasi kekebalan kelompok pencegahan penyakit",
-    "gula": "gula darah glukosa diabetes melitus",
-    "kencing manis": "diabetes melitus glukosa darah",
-    "darah tinggi": "hipertensi tekanan darah sistolik diastolik",
+    "campak": "campak measles rubella vaksinasi imunisasi virus menular",
+    "mmr": "vaksin mmr campak autisme keamanan vaksinasi",
+    "autisme": "autisme vaksin mmr keamanan imunisasi",
+    "gula": "gula darah glukosa ggl diabetes melitus resistensi insulin",
+    "kencing manis": "diabetes melitus glukosa darah gula",
+    "diabetes": "diabetes melitus gula darah resistensi insulin ggl",
+    "garam": "garam natrium sodium hipertensi tekanan darah ggl",
+    "natrium": "garam natrium hipertensi tekanan darah",
+    "lemak": "lemak jenuh kolesterol penyakit jantung ggl",
+    "darah tinggi": "hipertensi tekanan darah sistolik diastolik garam natrium",
+    "hipertensi": "hipertensi tekanan darah garam natrium stroke jantung",
     "angin duduk": "angina pektoris sindrom koroner akut nyeri dada",
 }
 

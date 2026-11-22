@@ -1,6 +1,6 @@
-"""Pydantic v2 schemas for evidence items and citations."""
+"""Pydantic v2 schemas for evidence items, indexed documents, and citations."""
 
-from datetime import date
+from datetime import date, datetime
 from typing import Literal
 
 from pydantic import BaseModel, ConfigDict, Field
@@ -37,3 +37,33 @@ class EvidenceStatsData(BaseModel):
     ai_provider: str
     embedding_backend: str
     reranker_backend: str
+
+
+class EvidenceDocumentItem(BaseModel):
+    """Metadata summary for a single indexed evidence document."""
+
+    model_config = ConfigDict(extra="forbid")
+
+    id: str
+    source_name: str
+    source_url: str
+    title: str
+    authors: str | None = None
+    publication_date: date | None = None
+    language_code: str
+    source_type: str
+    chunks_count: int = Field(..., ge=0)
+    is_synthetic_demo: bool
+    retrieved_at: datetime
+
+
+class EvidenceDocumentListData(BaseModel):
+    """Paginated list of indexed evidence documents returned by GET /api/v1/evidence/documents."""
+
+    model_config = ConfigDict(extra="forbid")
+
+    items: list[EvidenceDocumentItem]
+    total: int = Field(..., ge=0)
+    limit: int = Field(..., ge=1)
+    offset: int = Field(..., ge=0)
+    database_connected: bool

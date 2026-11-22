@@ -14,6 +14,7 @@ from verimed_api.repositories.evidence_repo import (
     ChunkIndexRecord,
     EvidenceCorpusStats,
     EvidenceDocumentRecord,
+    EvidenceDocumentSummary,
     EvidenceRepository,
 )
 
@@ -97,3 +98,28 @@ class IngestionService:
                 chunks_count=0,
                 synthetic_documents_count=0,
             )
+
+    async def list_documents(
+        self,
+        *,
+        search: str | None = None,
+        source_type: str | None = None,
+        include_synthetic: bool = True,
+        limit: int = 20,
+        offset: int = 0,
+    ) -> tuple[list[EvidenceDocumentSummary], int, bool]:
+        """Return paginated indexed documents or empty list when DB is unavailable."""
+        cleaned_search = search.strip() if search and search.strip() else None
+        cleaned_type = source_type.strip() if source_type and source_type.strip() else None
+        try:
+            items, total = await self._evidence_repo.list_documents(
+                search=cleaned_search,
+                source_type=cleaned_type,
+                include_synthetic=include_synthetic,
+                limit=limit,
+                offset=offset,
+            )
+            return items, total, True
+        except (SQLAlchemyError, OSError):
+            logger.warning("Evidence document list requested while DB is unavailable.")
+            return [], 0, False

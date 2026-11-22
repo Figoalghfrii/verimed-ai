@@ -177,3 +177,17 @@ Records anonymous user clarity ratings on verification explanations (`is_helpful
 
 ### Rate-Limiting Middleware
 Non-exempt endpoints include `X-RateLimit-Limit`, `X-RateLimit-Remaining`, and `X-RateLimit-Reset` headers (controlled by `RATE_LIMIT_ENABLED` and `RATE_LIMIT_REQUESTS_PER_MINUTE`). Requests exceeding the per-IP sliding-window limit receive HTTP `429` with `ErrorResponse` (`code: "RATE_LIMIT_EXCEEDED"`) and a `Retry-After` header. `/api/v1/health` and OpenAPI docs remain exempt.
+
+---
+
+## 6. Phase 6 Implemented Corpus Explorer & Feedback Analytics Endpoints
+
+### `GET /api/v1/evidence/documents`
+Returns paginated metadata for indexed curated and synthetic demonstration documents (`items`, `total`, `limit`, `offset`, `database_connected`). Supports optional query parameters:
+- `q` (max 120 chars): case-insensitive substring filter over document `title` and `source_name`.
+- `source_type` (max 64 chars): exact filter such as `OFFICIAL_GUIDELINE`, `WHO_FACT_SHEET`, `WHO_GUIDANCE`, `BPOM_ADVISORY`, or `SYNTHETIC_DEMO_GUIDELINE`.
+- `include_synthetic` (`true`/`false`, default `true`): excludes synthetic demo documents when `false`.
+- `limit` (`1–50`, default `20`) and `offset` (`>= 0`, default `0`).
+
+### `GET /api/v1/feedback/stats`
+Returns aggregated anonymous user clarity feedback counts (`total_count`, `helpful_count`, `not_helpful_count`, `helpful_rate`, `by_category`, `database_connected`) without exposing raw user comments.

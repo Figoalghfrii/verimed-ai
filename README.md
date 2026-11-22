@@ -138,3 +138,4 @@ npm run build
 - [AI Verification Pipeline Design](./docs/AI_PIPELINE.md)
 - [Security, Privacy & Medical Safety](./docs/SAFETY.md)
 - [Development Roadmap](./docs/ROADMAP.md)
+- [Deployment & Production Operations](./docs/DEPLOYMENT.md)
