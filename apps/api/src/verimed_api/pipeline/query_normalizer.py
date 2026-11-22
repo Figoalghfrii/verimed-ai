@@ -31,6 +31,19 @@ INDONESIAN_MEDICAL_SYNONYMS: dict[str, str] = {
     "darah tinggi": "hipertensi tekanan darah sistolik diastolik garam natrium",
     "hipertensi": "hipertensi tekanan darah garam natrium stroke jantung",
     "angin duduk": "angina pektoris sindrom koroner akut nyeri dada",
+    "handwashing": "cuci tangan pakai sabun ctps higiene sanitasi infeksi diare",
+    "wash hands": "cuci tangan pakai sabun ctps pencegahan infeksi diare",
+    "soap": "sabun cuci tangan pakai sabun ctps pencegahan infeksi",
+    "antibiotic": "antibiotik resistensi antimikroba amr infeksi bakteri virus",
+    "soursop": "daun sirsak annona muricata kanker kemoterapi",
+    "cancer": "kanker neoplasma onkologi kemoterapi",
+    "vaccine": "vaksinasi imunisasi kekebalan tubuh pencegahan penyakit",
+    "vaccination": "vaksinasi imunisasi kekebalan kelompok pencegahan penyakit",
+    "immunization": "imunisasi vaksinasi kekebalan kelompok pencegahan penyakit",
+    "measles": "campak measles rubella vaksinasi imunisasi",
+    "sugar": "gula gula darah glukosa ggl diabetes melitus",
+    "salt": "garam natrium sodium hipertensi tekanan darah ggl",
+    "hypertension": "hipertensi darah tinggi tekanan darah garam natrium",
 }
 
 PUNCTUATION_RE = re.compile(r"[^\w\s-]", re.UNICODE)

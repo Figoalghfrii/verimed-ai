@@ -10,7 +10,9 @@ EMERGENCY_PATTERNS: tuple[tuple[str, re.Pattern[str]], ...] = (
         "cardiac_respiratory",
         re.compile(
             r"\b(nyeri\s+dada(\s+hebat)?|serangan\s+jantung|sesak\s+napas(\s+berat|\s+akut)?|"
-            r"sulit\s+bernapas|henti\s+jantung|chest\s+pain|shortness\s+of\s+breath)\b",
+            r"sulit\s+bernapas|henti\s+jantung|chest\s+pain|heart\s+attack|"
+            r"shortness\s+of\s+breath|difficulty\s+breathing|trouble\s+breathing|"
+            r"can'?t\s+breathe|cannot\s+breathe)\b",
             re.IGNORECASE,
         ),
     ),
@@ -18,7 +20,8 @@ EMERGENCY_PATTERNS: tuple[tuple[str, re.Pattern[str]], ...] = (
         "neurological_stroke",
         re.compile(
             r"\b(gejala\s+stroke|mulut\s+mencong|lumpuh\s+mendadak|kejang(\s+terus)?|"
-            r"tidak\s+sadarkan\s+diri|pingsan\s+mendadak)\b",
+            r"tidak\s+sadarkan\s+diri|pingsan\s+mendadak|stroke\s+symptoms|"
+            r"sudden\s+paralysis|unconscious)\b",
             re.IGNORECASE,
         ),
     ),
@@ -26,14 +29,16 @@ EMERGENCY_PATTERNS: tuple[tuple[str, re.Pattern[str]], ...] = (
         "trauma_poisoning",
         re.compile(
             r"\b(perdarahan\s+hebat|pendarahan\s+hebat|keracunan\s+akut|overdosis|"
-            r"terbakar\s+hebat|anafilaksis)\b",
+            r"terbakar\s+hebat|anafilaksis|severe\s+bleeding|acute\s+poisoning|"
+            r"overdose|anaphylaxis)\b",
             re.IGNORECASE,
         ),
     ),
     (
         "self_harm",
         re.compile(
-            r"\b(bunuh\s+diri|menyakiti\s+diri(\s+sendiri)?|ingin\s+mati|mengakhiri\s+hidup)\b",
+            r"\b(bunuh\s+diri|menyakiti\s+diri(\s+sendiri)?|ingin\s+mati|mengakhiri\s+hidup|"
+            r"suicide|self[\s-]harm|kill\s+myself|end\s+my\s+life)\b",
             re.IGNORECASE,
         ),
     ),

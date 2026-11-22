@@ -225,6 +225,96 @@ _DEMO_TOPICS: tuple[_DemoTopicEntry, ...] = (
             "dengan kondisi ginjal tertentu."
         ),
     ),
+    _DemoTopicEntry(
+        keywords=("imunisasi", "vaksin", "campak", "measles", "vaccine"),
+        expected_verdict="SUPPORTED",
+        chunks=(
+            RetrievedChunkCandidate(
+                chunk_id="demo-imun-001",
+                source_name="VeriMed Demo Corpus — Imunisasi Dasar",
+                source_type="SYNTHETIC_DEMO_GUIDELINE",
+                title="[Contoh Simulasi] Peran Imunisasi Dasar dalam Pencegahan Penyakit Menular",
+                source_url="https://demo.verimed.local/synthetic/imunisasi-dasar",
+                publication_date=date(2025, 2, 20),
+                chunk_text=(
+                    "Data simulasi demonstrasi: Imunisasi dasar direkomendasikan dan terbukti "
+                    "efektif melindungi anak serta masyarakat dari berbagai penyakit menular "
+                    "berbahaya seperti campak, polio, dan difteri."
+                ),
+                lexical_score=0.91,
+                vector_score=0.90,
+                hybrid_score=0.905,
+                rerank_score=0.93,
+                stance="SUPPORTING",
+                is_synthetic_demo=True,
+            ),
+        ),
+        uncertainty_notes=(
+            "Penilaian ini menggunakan data simulasi demonstrasi. Jadwal imunisasi anak "
+            "sebaiknya dikonsultasikan dengan puskesmas atau dokter anak."
+        ),
+    ),
+    _DemoTopicEntry(
+        keywords=("jamu", "obat tradisional", "herbal", "bko"),
+        expected_verdict="CONTRADICTED",
+        chunks=(
+            RetrievedChunkCandidate(
+                chunk_id="demo-jamu-001",
+                source_name="VeriMed Demo Corpus — Pengawasan Obat Bahan Alam",
+                source_type="SYNTHETIC_DEMO_GUIDELINE",
+                title=(
+                    "[Contoh Simulasi] Evaluasi Klaim Obat Tradisional/Jamu "
+                    "sebagai Penyembuh Kanker"
+                ),
+                source_url="https://demo.verimed.local/synthetic/jamu-kanker-bpom",
+                publication_date=date(2025, 3, 5),
+                chunk_text=(
+                    "Data simulasi demonstrasi: Klaim promosi obat tradisional atau jamu dapat "
+                    "menyembuhkan kanker tanpa terapi medis standar adalah tidak benar dan "
+                    "tidak menggantikan penanganan medis dokter."
+                ),
+                lexical_score=0.90,
+                vector_score=0.89,
+                hybrid_score=0.895,
+                rerank_score=0.92,
+                stance="CONTRADICTING",
+                is_synthetic_demo=True,
+            ),
+        ),
+        uncertainty_notes=(
+            "Penilaian ini menggunakan data simulasi demonstrasi. Pastikan produk memiliki "
+            "izin edar resmi dan konsultasikan pengobatan penyakit berat dengan dokter."
+        ),
+    ),
+    _DemoTopicEntry(
+        keywords=("ggl", "gula", "garam", "lemak", "diabetes", "hipertensi"),
+        expected_verdict="SUPPORTED",
+        chunks=(
+            RetrievedChunkCandidate(
+                chunk_id="demo-ggl-001",
+                source_name="VeriMed Demo Corpus — Gizi Seimbang PTM",
+                source_type="SYNTHETIC_DEMO_GUIDELINE",
+                title="[Contoh Simulasi] Pembatasan Gula, Garam, dan Lemak untuk Mencegah PTM",
+                source_url="https://demo.verimed.local/synthetic/pembatasan-ggl",
+                publication_date=date(2025, 2, 12),
+                chunk_text=(
+                    "Data simulasi demonstrasi: Membatasi asupan gula, garam, dan lemak harian "
+                    "terbukti membantu menurunkan risiko penyakit tidak menular seperti diabetes "
+                    "melitus tipe 2 dan hipertensi."
+                ),
+                lexical_score=0.89,
+                vector_score=0.88,
+                hybrid_score=0.885,
+                rerank_score=0.91,
+                stance="SUPPORTING",
+                is_synthetic_demo=True,
+            ),
+        ),
+        uncertainty_notes=(
+            "Penilaian ini menggunakan data simulasi demonstrasi. Kebutuhan gizi harian "
+            "dapat berbeda bagi individu dengan kondisi metabolik khusus."
+        ),
+    ),
 )
 
 
@@ -269,10 +359,25 @@ class MockPipelineProvider:
         self,
         claim_text: str,
         evidence: list[RetrievedChunkCandidate],
+        language: str = "id",
     ) -> EvidenceAssessmentResult:
         """Assess stance from reranked evidence, enforcing abstention when evidence is missing."""
         del claim_text
         if not evidence:
+            if language == "en":
+                return EvidenceAssessmentResult(
+                    verdict="INSUFFICIENT_EVIDENCE",
+                    confidence_score=0.0,
+                    abstained=True,
+                    abstention_reason=(
+                        "No evidence passages met the minimum relevance threshold in the "
+                        "current demonstration corpus."
+                    ),
+                    uncertainty_notes=(
+                        "The system abstained because available demonstration evidence is "
+                        "insufficient to evaluate this claim."
+                    ),
+                )
             return EvidenceAssessmentResult(
                 verdict="INSUFFICIENT_EVIDENCE",
                 confidence_score=0.0,
@@ -302,22 +407,36 @@ class MockPipelineProvider:
                 confidence_score=round(top_score * 0.5, 2),
                 abstained=True,
                 abstention_reason=(
-                    "Bukti yang ditemukan hanya bersifat kontekstual tanpa sikap jelas."
+                    "Retrieved passages are contextual only without a clear supporting or "
+                    "refuting stance."
+                    if language == "en"
+                    else "Bukti yang ditemukan hanya bersifat kontekstual tanpa sikap jelas."
                 ),
                 uncertainty_notes=(
-                    "Bukti yang tersedia belum cukup spesifik untuk mendukung atau membantah klaim."
+                    "Available evidence is not specific enough to support or contradict this claim."
+                    if language == "en"
+                    else (
+                        "Bukti yang tersedia belum cukup spesifik untuk mendukung atau "
+                        "membantah klaim."
+                    )
                 ),
             )
 
         # Look up topic-specific uncertainty notes when available
         topic_notes = (
-            "Penilaian ini dihasilkan oleh mode demonstrasi menggunakan data simulasi "
-            "dan hanya mencerminkan isi korpus contoh."
+            "This assessment was generated in demonstration mode using synthetic data and "
+            "reflects only the sample corpus."
+            if language == "en"
+            else (
+                "Penilaian ini dihasilkan oleh mode demonstrasi menggunakan data simulasi "
+                "dan hanya mencerminkan isi korpus contoh."
+            )
         )
-        for topic in _DEMO_TOPICS:
-            if evidence[0].chunk_id in {c.chunk_id for c in topic.chunks}:
-                topic_notes = topic.uncertainty_notes
-                break
+        if language != "en":
+            for topic in _DEMO_TOPICS:
+                if evidence[0].chunk_id in {c.chunk_id for c in topic.chunks}:
+                    topic_notes = topic.uncertainty_notes
+                    break
 
         return EvidenceAssessmentResult(
             verdict=verdict,
@@ -332,10 +451,20 @@ class MockPipelineProvider:
         claim_text: str,
         assessment: EvidenceAssessmentResult,
         evidence: list[RetrievedChunkCandidate],
+        language: str = "id",
     ) -> ExplanationDraft:
-        """Generate grounded Bahasa Indonesia explanation isolated from untrusted chunks."""
+        """Generate grounded Indonesian or English explanation isolated from untrusted chunks."""
         del claim_text
         if assessment.abstained or not evidence:
+            if language == "en":
+                return ExplanationDraft(
+                    explanation=(
+                        "In current demonstration mode, VeriMed did not find sufficient evidence "
+                        "in the sample database to evaluate this claim accurately. Therefore, the "
+                        "system abstained to avoid unsupported conclusions."
+                    ),
+                    citations=[],
+                )
             return ExplanationDraft(
                 explanation=(
                     "Pada mode demonstrasi saat ini, VeriMed belum menemukan bukti yang cukup "
@@ -353,6 +482,30 @@ class MockPipelineProvider:
             _isolated_block = self._safety_guard.wrap_untrusted_evidence(key, chunk.chunk_text)
             del _isolated_block
             citations.append(CitationEntry(citation_key=key, chunk=chunk))
+
+        if language == "en":
+            if assessment.verdict == "SUPPORTED":
+                lead = (
+                    "Based on retrieved synthetic demonstration evidence, the claim aligns with "
+                    "the available summary [1]."
+                )
+            elif assessment.verdict == "CONTRADICTED":
+                lead = (
+                    "Based on retrieved synthetic demonstration evidence, the claim contradicts "
+                    "findings in the demonstration corpus [1]."
+                )
+            else:
+                lead = (
+                    "Based on retrieved synthetic demonstration evidence, available findings are "
+                    "mixed depending on context and population group [1]."
+                )
+            detail_parts = [lead]
+            if len(citations) >= 2:
+                detail_parts.append(
+                    "Additional context from the second source clarifies application limits "
+                    "and relevant medical safety considerations [2]."
+                )
+            return ExplanationDraft(explanation=" ".join(detail_parts), citations=citations)
 
         if assessment.verdict == "SUPPORTED":
             lead = (

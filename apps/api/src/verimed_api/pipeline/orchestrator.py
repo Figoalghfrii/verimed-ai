@@ -29,8 +29,22 @@ class PipelineExecutionOutput:
     retrieval_audits: dict[int, list[RetrievedChunkCandidate]] = field(default_factory=dict)
 
 
-def build_emergency_guidance() -> EmergencyGuidance:
-    """Return immediate Indonesian emergency medical guidance."""
+def build_emergency_guidance(language: str = "id") -> EmergencyGuidance:
+    """Return immediate emergency medical guidance in Indonesian or English."""
+    if language == "en":
+        return EmergencyGuidance(
+            headline="Potential Acute Medical Emergency Detected",
+            message=(
+                "Your submission mentions indicators of an acute medical emergency. "
+                "VeriMed does not process claim verification in emergency situations. "
+                "Please seek immediate professional medical care."
+            ),
+            emergency_contacts=[
+                "Ambulance / Indonesian Ministry of Health: 119",
+                "National Emergency Call Center: 112",
+                "Visit the nearest Emergency Department (IGD) immediately",
+            ],
+        )
     return EmergencyGuidance(
         headline="Terdeteksi Potensi Kondisi Darurat Medis",
         message=(
@@ -73,13 +87,13 @@ class VerificationPipelineOrchestrator:
         self._model_version = model_version
         self._min_rerank_score = min_rerank_score
 
-    async def run(self, raw_text: str) -> PipelineExecutionOutput:
+    async def run(self, raw_text: str, language: str = "id") -> PipelineExecutionOutput:
         """Execute input safety screening, extraction, retrieval, assessment, and citation check."""
         safety = self._safety_guard.screen_input(raw_text)
         if safety.is_emergency:
             return PipelineExecutionOutput(
                 emergency_triggered=True,
-                emergency_guidance=build_emergency_guidance(),
+                emergency_guidance=build_emergency_guidance(language=language),
                 claims=[],
                 model_version=self._model_version,
             )
@@ -104,11 +118,13 @@ class VerificationPipelineOrchestrator:
             assessment = await self._assessor.assess(
                 claim_text=claim_text,
                 evidence=reranked,
+                language=language,
             )
             draft = await self._explainer.explain(
                 claim_text=claim_text,
                 assessment=assessment,
                 evidence=reranked,
+                language=language,
             )
             citations_valid, validated_draft = self._citation_validator.validate(
                 draft=draft,

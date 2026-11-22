@@ -126,17 +126,19 @@ class EvidenceAssessorProtocol(Protocol):
         self,
         claim_text: str,
         evidence: list[RetrievedChunkCandidate],
+        language: str = "id",
     ) -> EvidenceAssessmentResult: ...
 
 
 class GroundedExplainerProtocol(Protocol):
-    """Generates a grounded explanation in Bahasa Indonesia using untrusted delimiters."""
+    """Generates a grounded explanation using untrusted delimiters."""
 
     async def explain(
         self,
         claim_text: str,
         assessment: EvidenceAssessmentResult,
         evidence: list[RetrievedChunkCandidate],
+        language: str = "id",
     ) -> ExplanationDraft: ...
 
 

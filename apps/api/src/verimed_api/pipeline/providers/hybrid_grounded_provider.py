@@ -51,6 +51,7 @@ class HybridGroundedAssessor:
         self,
         claim_text: str,
         evidence: list[RetrievedChunkCandidate],
+        language: str = "id",
     ) -> EvidenceAssessmentResult:
         """Determine evidence verdict and enforce strict abstention when evidence is weak."""
         del claim_text
@@ -60,12 +61,20 @@ class HybridGroundedAssessor:
                 confidence_score=0.0,
                 abstained=True,
                 abstention_reason=(
-                    "Tidak ditemukan potongan bukti di basis data yang memenuhi ambang "
-                    "relevansi minimum untuk menilai klaim ini."
+                    "No indexed evidence chunks met the minimum relevance threshold for this claim."
+                    if language == "en"
+                    else (
+                        "Tidak ditemukan potongan bukti di basis data yang memenuhi ambang "
+                        "relevansi minimum untuk menilai klaim ini."
+                    )
                 ),
                 uncertainty_notes=(
-                    "Sistem menahan diri (abstain) karena bukti terindeks di basis data "
-                    "belum memadai."
+                    "The system abstained because indexed database evidence is insufficient."
+                    if language == "en"
+                    else (
+                        "Sistem menahan diri (abstain) karena bukti terindeks di basis data "
+                        "belum memadai."
+                    )
                 ),
             )
 
@@ -91,12 +100,20 @@ class HybridGroundedAssessor:
                 confidence_score=round(top_score * 0.6, 2),
                 abstained=True,
                 abstention_reason=(
-                    "Potongan bukti yang ditemukan hanya bersifat kontekstual tanpa posisi "
-                    "yang cukup tegas."
+                    "Retrieved passages are contextual only without a decisive stance."
+                    if language == "en"
+                    else (
+                        "Potongan bukti yang ditemukan hanya bersifat kontekstual tanpa posisi "
+                        "yang cukup tegas."
+                    )
                 ),
                 uncertainty_notes=(
-                    "Diperlukan rujukan ilmiah tambahan untuk memastikan hubungan klaim ini "
-                    "terhadap bukti."
+                    "Additional scientific references are needed to evaluate this claim."
+                    if language == "en"
+                    else (
+                        "Diperlukan rujukan ilmiah tambahan untuk memastikan hubungan klaim ini "
+                        "terhadap bukti."
+                    )
                 ),
             )
 
@@ -106,14 +123,19 @@ class HybridGroundedAssessor:
             abstained=False,
             abstention_reason=None,
             uncertainty_notes=(
-                "Penilaian ini dihasilkan dari pencarian hibrida basis data (tsvector + pgvector) "
-                "berdasarkan dokumen yang terindeks saat ini."
+                "This assessment was produced from hybrid database search (tsvector + pgvector) "
+                "over currently indexed documents."
+                if language == "en"
+                else (
+                    "Penilaian ini dihasilkan dari pencarian hibrida basis data "
+                    "(tsvector + pgvector) berdasarkan dokumen yang terindeks saat ini."
+                )
             ),
         )
 
 
 class HybridGroundedExplainer:
-    """Produces grounded Bahasa Indonesia summaries isolating untrusted evidence passages."""
+    """Produces grounded Indonesian or English summaries isolating untrusted evidence passages."""
 
     def __init__(self, safety_guard: SafetyGuardProtocol) -> None:
         self._safety_guard = safety_guard
@@ -123,15 +145,22 @@ class HybridGroundedExplainer:
         claim_text: str,
         assessment: EvidenceAssessmentResult,
         evidence: list[RetrievedChunkCandidate],
+        language: str = "id",
     ) -> ExplanationDraft:
         """Assemble grounded explanation referencing only retrieved evidence chunks."""
         del claim_text
         if assessment.abstained or not evidence:
             return ExplanationDraft(
                 explanation=(
-                    "Dari penelusuran basis data bukti saat ini, belum ditemukan rujukan yang "
-                    "cukup kuat dan relevan untuk menyimpulkan klaim tersebut. Sistem menahan "
-                    "diri (abstain) agar tidak menyajikan kesimpulan tanpa dasar bukti."
+                    "Based on the current evidence database search, no sufficiently strong and "
+                    "relevant references were found for this claim. The system abstained to avoid "
+                    "presenting an unsupported conclusion."
+                    if language == "en"
+                    else (
+                        "Dari penelusuran basis data bukti saat ini, belum ditemukan rujukan yang "
+                        "cukup kuat dan relevan untuk menyimpulkan klaim tersebut. Sistem menahan "
+                        "diri (abstain) agar tidak menyajikan kesimpulan tanpa dasar bukti."
+                    )
                 ),
                 citations=[],
             )
@@ -148,6 +177,30 @@ class HybridGroundedExplainer:
                     chunk=replace(chunk, stance=inferred_stance),
                 )
             )
+
+        if language == "en":
+            if assessment.verdict == "SUPPORTED":
+                lead = (
+                    "Based on evidence passages retrieved from the curated database, this claim "
+                    "aligns with the primary reference [1]."
+                )
+            elif assessment.verdict == "CONTRADICTED":
+                lead = (
+                    "Based on evidence passages retrieved from the curated database, this claim "
+                    "contradicts the primary reference [1]."
+                )
+            else:
+                lead = (
+                    "Based on evidence passages retrieved from the curated database, scientific "
+                    "evidence shows mixed or context-dependent findings [1]."
+                )
+            parts = [lead]
+            if len(citations) >= 2:
+                parts.append(
+                    "An additional retrieved reference provides relevant context and application "
+                    "limitations [2]."
+                )
+            return ExplanationDraft(explanation=" ".join(parts), citations=citations)
 
         if assessment.verdict == "SUPPORTED":
             lead = (
