@@ -29,17 +29,30 @@ services:
       DATABASE_URL: postgresql+asyncpg://${POSTGRES_USER:-verimed}:${POSTGRES_PASSWORD:-verimed_dev_password}@postgres:5432/${POSTGRES_DB:-verimed_db}
       DATABASE_SYNC_URL: postgresql+psycopg://${POSTGRES_USER:-verimed}:${POSTGRES_PASSWORD:-verimed_dev_password}@postgres:5432/${POSTGRES_DB:-verimed_db}
       AI_PROVIDER: ${AI_PROVIDER:-mock}
-      CORS_ORIGINS: '["http://localhost:3000","http://127.0.0.1:3000"]'
+      EMBEDDING_BACKEND: ${EMBEDDING_BACKEND:-hash}
+      RERANKER_BACKEND: ${RERANKER_BACKEND:-lexical}
+      RATE_LIMIT_ENABLED: ${RATE_LIMIT_ENABLED:-true}
+      RATE_LIMIT_REQUESTS_PER_MINUTE: ${RATE_LIMIT_REQUESTS_PER_MINUTE:-60}
+      CORS_ORIGINS: ${CORS_ORIGINS:-["http://localhost:3000","http://127.0.0.1:3000"]}
     ports:
       - "${API_PORT:-8000}:8000"
     depends_on:
       postgres:
         condition: service_healthy
+    healthcheck:
+      test: ["CMD-SHELL", "curl -fsS http://localhost:8000/api/v1/health || exit 1"]
+      interval: 15s
+      timeout: 5s
+      retries: 5
+      start_period: 15s
 
   web:
     build:
       context: .
       dockerfile: infra/docker/web.Dockerfile
+      args:
+        NEXT_PUBLIC_APP_NAME: ${NEXT_PUBLIC_APP_NAME:-VeriMed}
+        NEXT_PUBLIC_API_BASE_URL: ${NEXT_PUBLIC_API_BASE_URL:-http://localhost:8000/api/v1}
     container_name: verimed-web
     restart: unless-stopped
     environment:
@@ -48,7 +61,8 @@ services:
     ports:
       - "3000:3000"
     depends_on:
-      - api
+      api:
+        condition: service_healthy
 
 volumes:
   verimed_pgdata:

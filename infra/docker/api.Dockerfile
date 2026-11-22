@@ -7,7 +7,9 @@ ENV PYTHONDONTWRITEBYTECODE=1 \
 
 RUN apt-get update && apt-get install -y --no-install-recommends \
     curl \
-    && rm -rf /var/lib/apt/lists/*
+    && rm -rf /var/lib/apt/lists/* \
+    && groupadd --system verimed \
+    && useradd --system --gid verimed --create-home verimed
 
 COPY apps/api/pyproject.toml ./pyproject.toml
 COPY apps/api/alembic.ini ./alembic.ini
@@ -15,8 +17,14 @@ COPY apps/api/alembic ./alembic
 COPY apps/api/src ./src
 
 RUN pip install --no-cache-dir --upgrade pip && \
-    pip install --no-cache-dir -e .
+    pip install --no-cache-dir -e . && \
+    chown -R verimed:verimed /app
+
+USER verimed
 
 EXPOSE 8000
+
+HEALTHCHECK --interval=15s --timeout=5s --start-period=15s --retries=3 \
+    CMD curl -fsS http://localhost:8000/api/v1/health || exit 1
 
 CMD ["uvicorn", "verimed_api.main:app", "--host", "0.0.0.0", "--port", "8000"]
