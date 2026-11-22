@@ -102,3 +102,82 @@ async def test_orchestrator_abstains_when_evidence_is_insufficient() -> None:
     assert output.claims[0].verdict == "INSUFFICIENT_EVIDENCE"
     assert output.claims[0].abstained is True
     assert output.claims[0].sources == []
+
+
+async def test_query_normalizer_covers_curated_indonesian_medical_topics() -> None:
+    normalizer = IndonesianQueryNormalizer()
+    norm = await normalizer.normalize("Apakah jamu herbal menyembuhkan diabetes dan campak?")
+    assert "bpom" in norm
+    assert "resistensi insulin" in norm
+    assert "measles" in norm
+
+
+async def test_verification_repository_stages_retrieval_audit_rows() -> None:
+    import uuid
+
+    from verimed_api.models.evidence import RetrievalResult
+    from verimed_api.pipeline.orchestrator import PipelineExecutionOutput
+    from verimed_api.repositories.verification_repo import VerificationRepository
+    from verimed_api.schemas.verification import ClaimVerificationResult
+
+    added_rows: list[object] = []
+
+    class _FakeSession:
+        def add(self, row: object) -> None:
+            added_rows.append(row)
+
+        async def commit(self) -> None:
+            return None
+
+    chunk_uuid = str(uuid.uuid4())
+    candidate = RetrievedChunkCandidate(
+        chunk_id=chunk_uuid,
+        source_name="Kemenkes RI",
+        source_type="OFFICIAL_GUIDELINE",
+        title="CTPS",
+        source_url="https://kemkes.go.id/id/ctps",
+        publication_date=None,
+        chunk_text="CTPS mencegah diare.",
+        lexical_score=0.7,
+        vector_score=0.8,
+        hybrid_score=0.9,
+        rerank_score=0.88,
+        stance="SUPPORTING",
+        is_synthetic_demo=False,
+    )
+    output = PipelineExecutionOutput(
+        emergency_triggered=False,
+        emergency_guidance=None,
+        model_version="hybrid-0.1.0",
+        claims=[
+            ClaimVerificationResult(
+                claim_index=1,
+                claim_text="Cuci tangan mencegah diare.",
+                normalized_query="cuci tangan diare",
+                verdict="SUPPORTED",
+                verdict_label_id="Didukung Bukti",
+                confidence_score=0.88,
+                abstained=False,
+                explanation="Terbukti [1].",
+                uncertainty_notes="Terkurasi.",
+                citations_valid=True,
+                sources=[],
+            )
+        ],
+        retrieval_audits={1: [candidate]},
+    )
+
+    repo = VerificationRepository(session=_FakeSession())  # type: ignore[arg-type]
+    await repo.save_verification_result(
+        request_id=uuid.uuid4(),
+        input_text="Cuci tangan mencegah diare.",
+        language_code="id",
+        is_demonstration=False,
+        processing_time_ms=12,
+        output=output,
+    )
+    audit_rows = [row for row in added_rows if isinstance(row, RetrievalResult)]
+    assert len(audit_rows) == 1
+    assert audit_rows[0].rank_position == 1
+    assert audit_rows[0].hybrid_score == 0.9
+    assert audit_rows[0].rerank_score == 0.88

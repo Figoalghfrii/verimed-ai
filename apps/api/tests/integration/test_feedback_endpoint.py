@@ -100,3 +100,44 @@ async def test_feedback_service_returns_unpersisted_when_db_offline() -> None:
     )
     assert result.request_id == str(req_id)
     assert result.persisted is False
+
+
+async def test_get_feedback_stats_aggregates_submissions(
+    async_client: AsyncClient,
+) -> None:
+    """GET /api/v1/feedback/stats aggregates anonymous clarity ratings."""
+    verify_res = await async_client.post(
+        "/api/v1/verify",
+        json={
+            "text": "Mencuci tangan pakai sabun membantu mencegah penularan infeksi.",
+            "language": "id",
+        },
+    )
+    req_id = verify_res.json()["data"]["request_id"]
+
+    await async_client.post(
+        "/api/v1/feedback",
+        json={
+            "request_id": req_id,
+            "is_helpful": True,
+            "feedback_category": "CLARITY",
+        },
+    )
+    await async_client.post(
+        "/api/v1/feedback",
+        json={
+            "request_id": req_id,
+            "is_helpful": False,
+            "feedback_category": "CITATIONS",
+        },
+    )
+
+    stats_res = await async_client.get("/api/v1/feedback/stats")
+    assert stats_res.status_code == 200
+    data = stats_res.json()["data"]
+    assert data["total_count"] == 2
+    assert data["helpful_count"] == 1
+    assert data["not_helpful_count"] == 1
+    assert data["helpful_rate"] == 0.5
+    assert data["by_category"] == {"CLARITY": 1, "CITATIONS": 1}
+    assert data["database_connected"] is True
