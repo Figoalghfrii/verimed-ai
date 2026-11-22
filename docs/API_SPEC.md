@@ -84,7 +84,7 @@ Checks service liveness, database connectivity, and `pgvector` extension readine
 ## 3. Phase 2 Implemented Verification Endpoint
 
 ### `POST /api/v1/verify`
-Evaluates a submitted health claim through the VeriMed verification pipeline (`mock`, `hybrid`, or `configurable` via `AI_PROVIDER`).
+Evaluates a submitted health claim (`language`: `"id"` or `"en"`) through the VeriMed verification pipeline (`mock`, `hybrid`, or `configurable` via `AI_PROVIDER`), returning explanations, emergency guidance, and disclaimers in the requested language.
 
 #### Request Body
 ```json

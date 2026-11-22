@@ -36,3 +36,8 @@
 - [x] Persist `retrieval_results` audit rows in `VerificationRepository` and expand Indonesian medical synonyms (`campak`, `jamu`, `herbal`, `bko`, `diabetes`, `hipertensi`, `GGL`).
 - [x] Add `GET /api/v1/feedback/stats` anonymous clarity summary, `/verify` language toggle (`id`/`en`), and curated sample pills.
 - [x] Harden `api.Dockerfile`, `web.Dockerfile` (multi-stage production build), `compose.yaml`, and author `docs/DEPLOYMENT.md`.
+
+## Phase 7: Bilingual Pipeline & Demo Parity
+- [x] Expand `MockPipelineProvider` synthetic topics for full parity with `/verify` sample pills (`imunisasi`, `jamu`/`herbal`, `GGL`/`diabetes`/`hipertensi`).
+- [x] Propagate `language` (`id` | `en`) through `SafetyGuard`, `IndonesianQueryNormalizer` cross-lingual synonyms, `VerificationPipelineOrchestrator`, grounded/LLM explainers, and disclaimers.
+- [x] Add English sample claim chips and active local history selection highlight in `/verify`.
