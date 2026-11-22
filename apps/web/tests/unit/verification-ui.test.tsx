@@ -55,6 +55,24 @@ describe("ClaimInputForm", () => {
       language: "id",
     });
   });
+
+  it("supports switching claim language to English", () => {
+    const onSubmit = vi.fn();
+    render(<ClaimInputForm onSubmit={onSubmit} isSubmitting={false} />);
+
+    fireEvent.change(screen.getByLabelText("Bahasa Klaim:"), {
+      target: { value: "en" },
+    });
+    fireEvent.change(screen.getByLabelText("Teks Klaim Kesehatan"), {
+      target: { value: "Washing hands with soap reduces infection risk." },
+    });
+    fireEvent.click(screen.getByRole("button", { name: "Periksa Klaim" }));
+
+    expect(onSubmit).toHaveBeenCalledWith({
+      text: "Washing hands with soap reduces infection risk.",
+      language: "en",
+    });
+  });
 });
 
 describe("VerificationResultView", () => {

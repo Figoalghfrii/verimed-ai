@@ -24,6 +24,18 @@ const SAMPLE_DEMO_CLAIMS: readonly { label: string; text: string }[] = [
     label: "Bukti Tidak Cukup",
     text: "Mengonsumsi ekstrak tanaman eksotis langka dapat menambah tinggi badan orang dewasa.",
   },
+  {
+    label: "BPOM: Jamu Kanker",
+    text: "Obat tradisional atau jamu tertentu dapat menyembuhkan penyakit kanker tanpa perlu operasi maupun terapi medis.",
+  },
+  {
+    label: "Kemenkes: GGL",
+    text: "Membatasi asupan gula, garam, dan lemak harian membantu menurunkan risiko diabetes dan hipertensi.",
+  },
+  {
+    label: "Darurat Medis (119)",
+    text: "Saya mengalami nyeri dada hebat yang menjalar dan sesak napas mendadak.",
+  },
 ];
 
 interface ClaimInputFormProps {
@@ -36,11 +48,12 @@ export function ClaimInputForm({
   isSubmitting,
 }: ClaimInputFormProps) {
   const [text, setText] = useState("");
+  const [language, setLanguage] = useState<"id" | "en">("id");
   const [validationError, setValidationError] = useState<string | null>(null);
 
   const handleSubmit = (event: React.FormEvent<HTMLFormElement>) => {
     event.preventDefault();
-    const parsed = VerifyClaimInputSchema.safeParse({ text, language: "id" });
+    const parsed = VerifyClaimInputSchema.safeParse({ text, language });
     if (!parsed.success) {
       setValidationError(
         parsed.error.issues[0]?.message ?? "Klaim kesehatan tidak valid."
@@ -59,22 +72,42 @@ export function ClaimInputForm({
   return (
     <Card as="section" ariaLabelledBy="claim-form-heading" className="sm:p-7">
       <div className="space-y-5">
-        <div>
-          <h2
-            id="claim-form-heading"
-            className="text-lg font-bold text-slate-900"
-          >
-            Masukkan Klaim Kesehatan untuk Diperiksa
-          </h2>
-          <p className="mt-1 text-sm text-slate-600">
-            Tempelkan klaim dari media sosial atau pesan berantai (10–1.000
-            karakter). Jangan masukkan data pribadi atau rekam medis.
-          </p>
+        <div className="flex flex-wrap items-start justify-between gap-4">
+          <div>
+            <h2
+              id="claim-form-heading"
+              className="text-lg font-bold text-slate-900"
+            >
+              Masukkan Klaim Kesehatan untuk Diperiksa
+            </h2>
+            <p className="mt-1 text-sm text-slate-600">
+              Tempelkan klaim dari media sosial atau pesan berantai (10–1.000
+              karakter). Jangan masukkan data pribadi atau rekam medis.
+            </p>
+          </div>
+
+          <div className="flex items-center gap-2">
+            <label
+              htmlFor="claim-language-select"
+              className="text-xs font-semibold text-slate-600"
+            >
+              Bahasa Klaim:
+            </label>
+            <select
+              id="claim-language-select"
+              value={language}
+              onChange={(e) => setLanguage(e.target.value as "id" | "en")}
+              className="rounded-full border border-slate-200 bg-canvas px-3 py-1.5 text-xs font-semibold text-slate-800 focus:border-brand-500 focus:outline-none focus:ring-2 focus:ring-brand-200"
+            >
+              <option value="id">Bahasa Indonesia</option>
+              <option value="en">English</option>
+            </select>
+          </div>
         </div>
 
         <div className="rounded-2xl border border-slate-200/70 bg-canvas p-4">
           <p className="text-xs font-semibold uppercase tracking-wider text-slate-500">
-            Contoh Klaim Demonstrasi
+            Contoh Klaim Demonstrasi &amp; Rujukan Publik
           </p>
           <div className="mt-2.5 flex flex-wrap gap-2">
             {SAMPLE_DEMO_CLAIMS.map((sample) => (

@@ -1,6 +1,7 @@
 import Link from "next/link";
 import React from "react";
 import { Card } from "@/components/ui/card";
+import { FeedbackStatsCard } from "@/features/verification/components/feedback-stats-card";
 
 const PIPELINE_STEPS = [
   {
@@ -120,7 +121,7 @@ export default function AboutPage() {
             ).
           </li>
         </ul>
-        <div className="pt-2">
+        <div className="flex flex-wrap gap-3 pt-2">
           <Link
             href="/verify"
             className="inline-flex items-center gap-2 rounded-full bg-brand-600 px-6 py-2.5 text-sm font-semibold text-white shadow-sm transition hover:bg-brand-700"
@@ -128,8 +129,16 @@ export default function AboutPage() {
             <span>Coba Verifikasi Klaim Sekarang</span>
             <span aria-hidden="true">&rarr;</span>
           </Link>
+          <Link
+            href="/corpus"
+            className="inline-flex items-center gap-2 rounded-full border border-slate-200 bg-white px-6 py-2.5 text-sm font-semibold text-slate-700 shadow-sm transition hover:border-brand-300 hover:bg-brand-50"
+          >
+            <span>Lihat Direktori Korpus Bukti</span>
+          </Link>
         </div>
       </Card>
+
+      <FeedbackStatsCard />
     </div>
   );
 }
