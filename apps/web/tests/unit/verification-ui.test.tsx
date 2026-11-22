@@ -56,13 +56,16 @@ describe("ClaimInputForm", () => {
     });
   });
 
-  it("supports switching claim language to English", () => {
+  it("supports switching claim language to English and shows English sample chips", () => {
     const onSubmit = vi.fn();
     render(<ClaimInputForm onSubmit={onSubmit} isSubmitting={false} />);
 
     fireEvent.change(screen.getByLabelText("Bahasa Klaim:"), {
       target: { value: "en" },
     });
+    expect(
+      screen.getByRole("button", { name: "Handwashing & Infection" })
+    ).toBeInTheDocument();
     fireEvent.change(screen.getByLabelText("Teks Klaim Kesehatan"), {
       target: { value: "Washing hands with soap reduces infection risk." },
     });

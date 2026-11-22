@@ -7,36 +7,59 @@ import {
   VerifyClaimInputSchema,
 } from "../schemas/verification-schema";
 
-const SAMPLE_DEMO_CLAIMS: readonly { label: string; text: string }[] = [
-  {
-    label: "Didukung Bukti",
-    text: "Mencuci tangan pakai sabun dan air mengalir membantu menurunkan risiko penularan infeksi diare.",
-  },
-  {
-    label: "Bertentangan",
-    text: "Minum air rebusan daun sirsak dapat menyembuhkan semua jenis kanker tanpa kemoterapi.",
-  },
-  {
-    label: "Bukti Beragam",
-    text: "Konsumsi suplemen vitamin C dosis tinggi setiap hari mencegah pilek biasa.",
-  },
-  {
-    label: "Bukti Tidak Cukup",
-    text: "Mengonsumsi ekstrak tanaman eksotis langka dapat menambah tinggi badan orang dewasa.",
-  },
-  {
-    label: "BPOM: Jamu Kanker",
-    text: "Obat tradisional atau jamu tertentu dapat menyembuhkan penyakit kanker tanpa perlu operasi maupun terapi medis.",
-  },
-  {
-    label: "Kemenkes: GGL",
-    text: "Membatasi asupan gula, garam, dan lemak harian membantu menurunkan risiko diabetes dan hipertensi.",
-  },
-  {
-    label: "Darurat Medis (119)",
-    text: "Saya mengalami nyeri dada hebat yang menjalar dan sesak napas mendadak.",
-  },
-];
+const SAMPLE_CLAIMS_BY_LANG: Record<
+  "id" | "en",
+  readonly { label: string; text: string }[]
+> = {
+  id: [
+    {
+      label: "Didukung Bukti",
+      text: "Mencuci tangan pakai sabun dan air mengalir membantu menurunkan risiko penularan infeksi diare.",
+    },
+    {
+      label: "Bertentangan",
+      text: "Minum air rebusan daun sirsak dapat menyembuhkan semua jenis kanker tanpa kemoterapi.",
+    },
+    {
+      label: "Bukti Beragam",
+      text: "Konsumsi suplemen vitamin C dosis tinggi setiap hari mencegah pilek biasa.",
+    },
+    {
+      label: "Bukti Tidak Cukup",
+      text: "Mengonsumsi ekstrak tanaman eksotis langka dapat menambah tinggi badan orang dewasa.",
+    },
+    {
+      label: "BPOM: Jamu Kanker",
+      text: "Obat tradisional atau jamu tertentu dapat menyembuhkan penyakit kanker tanpa perlu operasi maupun terapi medis.",
+    },
+    {
+      label: "Kemenkes: GGL",
+      text: "Membatasi asupan gula, garam, dan lemak harian membantu menurunkan risiko diabetes dan hipertensi.",
+    },
+    {
+      label: "Darurat Medis (119)",
+      text: "Saya mengalami nyeri dada hebat yang menjalar dan sesak napas mendadak.",
+    },
+  ],
+  en: [
+    {
+      label: "Handwashing & Infection",
+      text: "Washing hands regularly with soap and running water reduces the risk of diarrhea and respiratory infections.",
+    },
+    {
+      label: "Antibiotics for Cold",
+      text: "Taking antibiotics can cure the common cold and flu caused by viruses.",
+    },
+    {
+      label: "Soursop & Cancer",
+      text: "Drinking boiled soursop leaf water cures all cancers without chemotherapy.",
+    },
+    {
+      label: "Emergency (119)",
+      text: "I am having severe chest pain and difficulty breathing right now.",
+    },
+  ],
+};
 
 interface ClaimInputFormProps {
   onSubmit: (payload: VerifyClaimInput) => void;
@@ -110,7 +133,7 @@ export function ClaimInputForm({
             Contoh Klaim Demonstrasi &amp; Rujukan Publik
           </p>
           <div className="mt-2.5 flex flex-wrap gap-2">
-            {SAMPLE_DEMO_CLAIMS.map((sample) => (
+            {SAMPLE_CLAIMS_BY_LANG[language].map((sample) => (
               <button
                 key={sample.label}
                 type="button"

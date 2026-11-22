@@ -131,12 +131,22 @@ export default function VerifyPage() {
             {history.map((entry) => {
               const firstClaim = entry.result.claims[0];
               if (!firstClaim) return null;
+              const isSelected =
+                activeResult?.request_id === entry.result.request_id;
               return (
                 <li key={entry.result.request_id}>
                   <button
                     type="button"
-                    onClick={() => setSelectedHistoryResult(entry.result)}
-                    className="flex w-full flex-wrap items-center justify-between gap-3 rounded-2xl border border-slate-200/80 bg-canvas px-4 py-3 text-left transition hover:border-brand-300 hover:bg-brand-50/40"
+                    aria-current={isSelected ? "true" : undefined}
+                    onClick={() => {
+                      setSelectedHistoryResult(entry.result);
+                      window.scrollTo({ top: 0, behavior: "smooth" });
+                    }}
+                    className={`flex w-full flex-wrap items-center justify-between gap-3 rounded-2xl border px-4 py-3 text-left transition ${
+                      isSelected
+                        ? "border-brand-400 bg-brand-50/70"
+                        : "border-slate-200/80 bg-canvas hover:border-brand-300 hover:bg-brand-50/40"
+                    }`}
                   >
                     <span className="line-clamp-1 text-xs font-medium text-slate-800">
                       &ldquo;{firstClaim.claim_text}&rdquo;
