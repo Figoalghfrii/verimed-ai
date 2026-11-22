@@ -1,10 +1,11 @@
 """Repository for persisting verification requests, claims, assessments, and citations."""
 
 import uuid
+from datetime import UTC, datetime
 
 from sqlalchemy.ext.asyncio import AsyncSession
 
-from verimed_api.models.evidence import Citation
+from verimed_api.models.evidence import Citation, RetrievalResult
 from verimed_api.models.verification import (
     ClaimAssessment,
     ExtractedClaim,
@@ -63,6 +64,24 @@ class VerificationRepository:
                 normalized_query=claim.normalized_query,
             )
             self._session.add(claim_row)
+
+            audited_candidates = output.retrieval_audits.get(claim.claim_index, [])
+            retrieved_now = datetime.now(UTC)
+            for rank_pos, candidate in enumerate(audited_candidates, start=1):
+                parsed_audit_chunk_id = _try_parse_uuid(candidate.chunk_id)
+                if parsed_audit_chunk_id is not None:
+                    self._session.add(
+                        RetrievalResult(
+                            claim_id=claim_id,
+                            chunk_id=parsed_audit_chunk_id,
+                            lexical_score=candidate.lexical_score,
+                            vector_score=candidate.vector_score,
+                            hybrid_score=candidate.hybrid_score,
+                            rerank_score=candidate.rerank_score,
+                            rank_position=rank_pos,
+                            retrieved_at=retrieved_now,
+                        )
+                    )
 
             assessment_id = uuid.uuid4()
             assessment_row = ClaimAssessment(

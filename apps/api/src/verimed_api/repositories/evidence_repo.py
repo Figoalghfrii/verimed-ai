@@ -5,7 +5,7 @@ import uuid
 from dataclasses import dataclass
 from datetime import date, datetime
 
-from sqlalchemy import func, select
+from sqlalchemy import func, or_, select
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from verimed_api.models.evidence import EvidenceChunk, EvidenceDocument
@@ -48,6 +48,23 @@ class EvidenceCorpusStats:
     documents_count: int
     chunks_count: int
     synthetic_documents_count: int
+
+
+@dataclass(frozen=True, slots=True)
+class EvidenceDocumentSummary:
+    """Indexed document metadata with chunk count for corpus browsing."""
+
+    id: str
+    source_name: str
+    source_url: str
+    title: str
+    authors: str | None
+    publication_date: date | None
+    language_code: str
+    source_type: str
+    chunks_count: int
+    is_synthetic_demo: bool
+    retrieved_at: datetime
 
 
 def build_safe_or_query(query_text: str, max_terms: int = 16) -> str:
@@ -214,3 +231,78 @@ class EvidenceRepository:
             chunks_count=int(chunks_count),
             synthetic_documents_count=int(synth_count),
         )
+
+    async def list_documents(
+        self,
+        *,
+        search: str | None = None,
+        source_type: str | None = None,
+        include_synthetic: bool = True,
+        limit: int = 20,
+        offset: int = 0,
+    ) -> tuple[list[EvidenceDocumentSummary], int]:
+        """Return paginated evidence documents matching optional filters."""
+        filters = []
+        if not include_synthetic:
+            filters.append(EvidenceDocument.is_synthetic_demo.is_(False))
+        if source_type:
+            filters.append(EvidenceDocument.source_type == source_type)
+        if search:
+            pattern = f"%{search}%"
+            filters.append(
+                or_(
+                    EvidenceDocument.title.ilike(pattern),
+                    EvidenceDocument.source_name.ilike(pattern),
+                )
+            )
+
+        count_stmt = select(func.count(EvidenceDocument.id))
+        if filters:
+            count_stmt = count_stmt.where(*filters)
+        total = int(await self._session.scalar(count_stmt) or 0)
+
+        stmt = (
+            select(
+                EvidenceDocument.id,
+                EvidenceDocument.source_name,
+                EvidenceDocument.source_url,
+                EvidenceDocument.title,
+                EvidenceDocument.authors,
+                EvidenceDocument.publication_date,
+                EvidenceDocument.language_code,
+                EvidenceDocument.source_type,
+                EvidenceDocument.is_synthetic_demo,
+                EvidenceDocument.retrieved_at,
+                func.count(EvidenceChunk.id).label("chunks_count"),
+            )
+            .outerjoin(EvidenceChunk, EvidenceChunk.document_id == EvidenceDocument.id)
+            .group_by(EvidenceDocument.id)
+            .order_by(
+                EvidenceDocument.is_synthetic_demo.asc(),
+                EvidenceDocument.retrieved_at.desc(),
+                EvidenceDocument.title.asc(),
+            )
+            .limit(limit)
+            .offset(offset)
+        )
+        if filters:
+            stmt = stmt.where(*filters)
+
+        rows = (await self._session.execute(stmt)).all()
+        items = [
+            EvidenceDocumentSummary(
+                id=str(row.id),
+                source_name=row.source_name,
+                source_url=row.source_url,
+                title=row.title,
+                authors=row.authors,
+                publication_date=row.publication_date,
+                language_code=row.language_code,
+                source_type=row.source_type,
+                chunks_count=int(row.chunks_count or 0),
+                is_synthetic_demo=bool(row.is_synthetic_demo),
+                retrieved_at=row.retrieved_at,
+            )
+            for row in rows
+        ]
+        return items, total

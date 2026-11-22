@@ -1,4 +1,4 @@
-"""Domain service coordinating user feedback validation and persistence."""
+"""Domain service coordinating user feedback validation, persistence, and stats."""
 
 import logging
 import uuid
@@ -8,7 +8,11 @@ from sqlalchemy.exc import SQLAlchemyError
 
 from verimed_api.core.exceptions import AppError
 from verimed_api.repositories.feedback_repo import FeedbackRepository
-from verimed_api.schemas.feedback import FeedbackRequestInput, FeedbackResponseData
+from verimed_api.schemas.feedback import (
+    FeedbackRequestInput,
+    FeedbackResponseData,
+    FeedbackStatsData,
+)
 
 logger = logging.getLogger(__name__)
 
@@ -82,3 +86,31 @@ class FeedbackService:
                 "Terima kasih! Masukan Anda membantu meningkatkan kejelasan penjelasan VeriMed."
             ),
         )
+
+    async def get_stats(self) -> FeedbackStatsData:
+        """Return aggregated anonymous clarity ratings or zero counts if DB is offline."""
+        try:
+            summary = await self._feedback_repo.get_stats()
+            helpful_rate = (
+                round(summary.helpful_count / summary.total_count, 4)
+                if summary.total_count > 0
+                else 0.0
+            )
+            return FeedbackStatsData(
+                total_count=summary.total_count,
+                helpful_count=summary.helpful_count,
+                not_helpful_count=summary.not_helpful_count,
+                helpful_rate=helpful_rate,
+                by_category=summary.by_category,
+                database_connected=True,
+            )
+        except (SQLAlchemyError, OSError):
+            logger.warning("Feedback stats requested while DB is unavailable.")
+            return FeedbackStatsData(
+                total_count=0,
+                helpful_count=0,
+                not_helpful_count=0,
+                helpful_rate=0.0,
+                by_category={},
+                database_connected=False,
+            )

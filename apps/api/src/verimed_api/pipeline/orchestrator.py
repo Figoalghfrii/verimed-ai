@@ -1,6 +1,6 @@
 """End-to-end VeriMed verification pipeline orchestrator."""
 
-from dataclasses import dataclass
+from dataclasses import dataclass, field
 
 from verimed_api.pipeline.interfaces import (
     VERDICT_LABELS_ID,
@@ -11,6 +11,7 @@ from verimed_api.pipeline.interfaces import (
     EvidenceRetrieverProtocol,
     GroundedExplainerProtocol,
     QueryNormalizerProtocol,
+    RetrievedChunkCandidate,
     SafetyGuardProtocol,
 )
 from verimed_api.schemas.evidence import EvidenceSourceItem
@@ -25,6 +26,7 @@ class PipelineExecutionOutput:
     emergency_guidance: EmergencyGuidance | None
     claims: list[ClaimVerificationResult]
     model_version: str
+    retrieval_audits: dict[int, list[RetrievedChunkCandidate]] = field(default_factory=dict)
 
 
 def build_emergency_guidance() -> EmergencyGuidance:
@@ -84,6 +86,7 @@ class VerificationPipelineOrchestrator:
 
         extracted_claims = await self._claim_extractor.extract_claims(safety.sanitized_text)
         results: list[ClaimVerificationResult] = []
+        retrieval_audits: dict[int, list[RetrievedChunkCandidate]] = {}
 
         for idx, claim_text in enumerate(extracted_claims, start=1):
             normalized_query = await self._query_normalizer.normalize(claim_text)
@@ -97,6 +100,7 @@ class VerificationPipelineOrchestrator:
                 candidates=candidates,
                 min_score=self._min_rerank_score,
             )
+            retrieval_audits[idx] = reranked or candidates
             assessment = await self._assessor.assess(
                 claim_text=claim_text,
                 evidence=reranked,
@@ -150,4 +154,5 @@ class VerificationPipelineOrchestrator:
             emergency_guidance=None,
             claims=results,
             model_version=self._model_version,
+            retrieval_audits=retrieval_audits,
         )
