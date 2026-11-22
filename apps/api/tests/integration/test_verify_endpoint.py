@@ -86,3 +86,63 @@ async def test_verify_short_input_returns_validation_error_envelope(
     body = response.json()
     assert body["success"] is False
     assert body["error"]["code"] == "VALIDATION_ERROR"
+
+
+async def test_verify_jamu_and_ggl_demo_claims_return_calibrated_verdicts(
+    async_client: AsyncClient,
+) -> None:
+    resp_jamu = await async_client.post(
+        "/api/v1/verify",
+        json={
+            "text": (
+                "Obat tradisional atau jamu tertentu dapat menyembuhkan penyakit kanker "
+                "tanpa perlu operasi maupun terapi medis."
+            ),
+            "language": "id",
+        },
+    )
+    assert resp_jamu.status_code == 200
+    assert resp_jamu.json()["data"]["claims"][0]["verdict"] == "CONTRADICTED"
+
+    resp_ggl = await async_client.post(
+        "/api/v1/verify",
+        json={
+            "text": (
+                "Membatasi asupan gula, garam, dan lemak harian membantu menurunkan risiko "
+                "diabetes dan hipertensi."
+            ),
+            "language": "id",
+        },
+    )
+    assert resp_ggl.status_code == 200
+    assert resp_ggl.json()["data"]["claims"][0]["verdict"] == "SUPPORTED"
+
+
+async def test_verify_english_claim_and_english_emergency_guidance(
+    async_client: AsyncClient,
+) -> None:
+    resp_en = await async_client.post(
+        "/api/v1/verify",
+        json={
+            "text": "Washing hands regularly with soap reduces the risk of infections.",
+            "language": "en",
+        },
+    )
+    assert resp_en.status_code == 200
+    data_en = resp_en.json()["data"]
+    assert data_en["language"] == "en"
+    assert "not a medical diagnosis tool" in data_en["disclaimer"]
+    assert data_en["claims"][0]["verdict"] == "SUPPORTED"
+    assert "Based on retrieved" in data_en["claims"][0]["explanation"]
+
+    resp_em = await async_client.post(
+        "/api/v1/verify",
+        json={
+            "text": "I have severe difficulty breathing and feel like a heart attack.",
+            "language": "en",
+        },
+    )
+    assert resp_em.status_code == 200
+    data_em = resp_em.json()["data"]
+    assert data_em["emergency_triggered"] is True
+    assert "Potential Acute Medical Emergency" in data_em["emergency_guidance"]["headline"]

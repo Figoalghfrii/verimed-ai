@@ -82,6 +82,7 @@ class ConfigurableLLMAssessorExplainer:
         self,
         claim_text: str,
         evidence: list[RetrievedChunkCandidate],
+        language: str = "id",
     ) -> str:
         evidence_blocks = "\n\n".join(
             self._safety_guard.wrap_untrusted_evidence(
@@ -90,8 +91,10 @@ class ConfigurableLLMAssessorExplainer:
             )
             for idx, chunk in enumerate(evidence[:5], start=1)
         )
+        target_language = "English" if language == "en" else "Bahasa Indonesia"
         return (
             f"Claim to evaluate (untrusted user text):\n{claim_text}\n\n"
+            f"Target language for explanation and uncertainty_notes: {target_language}\n\n"
             f"Retrieved evidence passages:\n{evidence_blocks}\n\n"
             'Respond with JSON keys: "verdict", "confidence_score", "abstained", '
             '"abstention_reason", "explanation", "uncertainty_notes".'
@@ -101,6 +104,7 @@ class ConfigurableLLMAssessorExplainer:
         self,
         claim_text: str,
         evidence: list[RetrievedChunkCandidate],
+        language: str = "id",
     ) -> StructuredLLMOutput | None:
         if not self._is_configured() or not evidence:
             return None
@@ -116,7 +120,10 @@ class ConfigurableLLMAssessorExplainer:
             "response_format": {"type": "json_object"},
             "messages": [
                 {"role": "system", "content": SYSTEM_PROMPT},
-                {"role": "user", "content": self._build_user_prompt(claim_text, evidence)},
+                {
+                    "role": "user",
+                    "content": self._build_user_prompt(claim_text, evidence, language=language),
+                },
             ],
         }
 
@@ -139,14 +146,15 @@ class ConfigurableLLMAssessorExplainer:
         self,
         claim_text: str,
         evidence: list[RetrievedChunkCandidate],
+        language: str = "id",
     ) -> EvidenceAssessmentResult:
         """Assess claim using hard abstention gate first, then configured LLM if available."""
         if not evidence or evidence[0].rerank_score < self._min_confidence:
-            return await self._fallback_assessor.assess(claim_text, evidence)
+            return await self._fallback_assessor.assess(claim_text, evidence, language=language)
 
-        llm_out = await self._invoke_llm(claim_text, evidence)
+        llm_out = await self._invoke_llm(claim_text, evidence, language=language)
         if llm_out is None:
-            return await self._fallback_assessor.assess(claim_text, evidence)
+            return await self._fallback_assessor.assess(claim_text, evidence, language=language)
 
         self._cached_llm_result[claim_text] = llm_out
         return EvidenceAssessmentResult(
@@ -162,16 +170,23 @@ class ConfigurableLLMAssessorExplainer:
         claim_text: str,
         assessment: EvidenceAssessmentResult,
         evidence: list[RetrievedChunkCandidate],
+        language: str = "id",
     ) -> ExplanationDraft:
         """Return validated LLM explanation mapped to retrieved citations, or grounded fallback."""
         if assessment.abstained or not evidence:
-            return await self._fallback_explainer.explain(claim_text, assessment, evidence)
+            return await self._fallback_explainer.explain(
+                claim_text, assessment, evidence, language=language
+            )
 
         llm_out = self._cached_llm_result.pop(claim_text, None)
         if llm_out is None:
-            return await self._fallback_explainer.explain(claim_text, assessment, evidence)
+            return await self._fallback_explainer.explain(
+                claim_text, assessment, evidence, language=language
+            )
 
-        fallback_draft = await self._fallback_explainer.explain(claim_text, assessment, evidence)
+        fallback_draft = await self._fallback_explainer.explain(
+            claim_text, assessment, evidence, language=language
+        )
         return ExplanationDraft(
             explanation=llm_out.explanation,
             citations=fallback_draft.citations,

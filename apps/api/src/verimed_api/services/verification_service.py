@@ -33,7 +33,7 @@ class VerificationService:
         request_id = uuid.uuid4()
         start = time.perf_counter()
 
-        output = await self._orchestrator.run(payload.text)
+        output = await self._orchestrator.run(payload.text, language=payload.language)
         processing_time_ms = max(1, int((time.perf_counter() - start) * 1000))
 
         uses_synthetic_sources = any(
@@ -59,6 +59,13 @@ class VerificationService:
                 request_id,
             )
 
+        disclaimer = (
+            "VeriMed is an educational evidence-based health claim verification platform, "
+            "not a medical diagnosis tool or a substitute for professional medical consultation."
+            if payload.language == "en"
+            else self._settings.medical_disclaimer_id
+        )
+
         return VerificationResponseData(
             request_id=str(request_id),
             status="EMERGENCY_HALT" if output.emergency_triggered else "COMPLETED",
@@ -70,5 +77,5 @@ class VerificationService:
             claims=output.claims,
             processing_time_ms=processing_time_ms,
             model_version=output.model_version,
-            disclaimer=self._settings.medical_disclaimer_id,
+            disclaimer=disclaimer,
         )
