@@ -96,5 +96,6 @@ async def test_curated_public_health_corpus_ingestion_and_benchmark() -> None:
     )
     assert report.recall_at_5 == 1.0
     assert report.mrr == 1.0
+    assert report.macro_f1 >= 0.9
     assert report.abstention_precision == 1.0
     assert report.citation_fidelity == 1.0

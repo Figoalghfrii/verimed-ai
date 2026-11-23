@@ -4,7 +4,7 @@ from typing import Annotated
 
 from fastapi import APIRouter, Depends, status
 
-from verimed_api.api.deps import get_feedback_service
+from verimed_api.api.deps import get_feedback_service, verify_client_credential
 from verimed_api.schemas.common import ApiResponse
 from verimed_api.schemas.feedback import (
     FeedbackRequestInput,
@@ -25,6 +25,7 @@ router = APIRouter(prefix="/feedback", tags=["feedback"])
 async def submit_feedback(
     payload: FeedbackRequestInput,
     feedback_service: Annotated[FeedbackService, Depends(get_feedback_service)],
+    _client: Annotated[None, Depends(verify_client_credential)],
 ) -> ApiResponse[FeedbackResponseData]:
     """Store anonymous user clarity feedback for a completed verification."""
     data = await feedback_service.submit_feedback(payload)

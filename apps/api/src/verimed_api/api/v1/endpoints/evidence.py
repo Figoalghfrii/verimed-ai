@@ -28,14 +28,15 @@ async def get_evidence_stats(
 ) -> ApiResponse[EvidenceStatsData]:
     """Report indexed document/chunk counts alongside active embedding & reranker config."""
     stats = await ingestion_service.get_stats()
+    expose_meta = settings.should_expose_operational_metadata
     return ApiResponse[EvidenceStatsData](
         data=EvidenceStatsData(
             documents_count=stats.documents_count,
             chunks_count=stats.chunks_count,
             synthetic_documents_count=stats.synthetic_documents_count,
-            ai_provider=settings.ai_provider,
-            embedding_backend=settings.embedding_backend,
-            reranker_backend=settings.reranker_backend,
+            ai_provider=settings.ai_provider if expose_meta else None,
+            embedding_backend=settings.embedding_backend if expose_meta else None,
+            reranker_backend=settings.reranker_backend if expose_meta else None,
         )
     )
 

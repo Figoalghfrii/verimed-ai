@@ -3,8 +3,10 @@
 import uuid
 from datetime import UTC, datetime
 
+from sqlalchemy import delete
 from sqlalchemy.ext.asyncio import AsyncSession
 
+from verimed_api.core.security import redact_private_text
 from verimed_api.models.evidence import Citation, RetrievalResult
 from verimed_api.models.verification import (
     ClaimAssessment,
@@ -36,14 +38,17 @@ class VerificationRepository:
         is_demonstration: bool,
         processing_time_ms: int,
         output: PipelineExecutionOutput,
+        assessment_ids: dict[int, uuid.UUID] | None = None,
+        anonymize_private: bool = False,
     ) -> None:
         """Persist a verification request, extracted claims, assessments, and citations."""
         status = "EMERGENCY_HALT" if output.emergency_triggered else "COMPLETED"
+        stored_input_text = redact_private_text(input_text) if anonymize_private else input_text
 
         req_row = VerificationRequest(
             id=request_id,
             user_id=None,
-            input_text=input_text,
+            input_text=stored_input_text,
             language_code=language_code,
             status=status,
             is_private=True,
@@ -53,17 +58,23 @@ class VerificationRepository:
             model_version=output.model_version,
         )
         self._session.add(req_row)
+        await self._session.flush()
 
         for claim in output.claims:
             claim_id = uuid.uuid4()
+            stored_claim_text = (
+                redact_private_text(claim.claim_text) if anonymize_private else claim.claim_text
+            )
+            stored_norm_query = "" if anonymize_private else claim.normalized_query
             claim_row = ExtractedClaim(
                 id=claim_id,
                 request_id=request_id,
                 claim_index=claim.claim_index,
-                claim_text=claim.claim_text,
-                normalized_query=claim.normalized_query,
+                claim_text=stored_claim_text,
+                normalized_query=stored_norm_query,
             )
             self._session.add(claim_row)
+            await self._session.flush()
 
             audited_candidates = output.retrieval_audits.get(claim.claim_index, [])
             retrieved_now = datetime.now(UTC)
@@ -83,7 +94,9 @@ class VerificationRepository:
                         )
                     )
 
-            assessment_id = uuid.uuid4()
+            assessment_id = (
+                assessment_ids.get(claim.claim_index) if assessment_ids is not None else None
+            ) or uuid.uuid4()
             assessment_row = ClaimAssessment(
                 id=assessment_id,
                 claim_id=claim_id,
@@ -97,6 +110,7 @@ class VerificationRepository:
                 prompt_version="phase3-hybrid-v1",
             )
             self._session.add(assessment_row)
+            await self._session.flush()
 
             for source in claim.sources:
                 parsed_chunk_id = _try_parse_uuid(source.chunk_id)
@@ -112,3 +126,10 @@ class VerificationRepository:
                     )
 
         await self._session.commit()
+
+    async def purge_older_than(self, cutoff: datetime) -> int:
+        """Delete verification_requests created before `cutoff` and return deleted count."""
+        stmt = delete(VerificationRequest).where(VerificationRequest.created_at < cutoff)
+        result = await self._session.execute(stmt)
+        await self._session.commit()
+        return int(result.rowcount or 0)

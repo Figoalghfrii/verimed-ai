@@ -5,13 +5,28 @@ services:
     restart: unless-stopped
     environment:
       POSTGRES_USER: ${POSTGRES_USER:-verimed}
-      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-verimed_dev_password}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:?POSTGRES_PASSWORD must be set in .env}
+      POSTGRES_APP_USER: ${POSTGRES_APP_USER:-verimed_app}
+      POSTGRES_APP_PASSWORD: ${POSTGRES_APP_PASSWORD:?POSTGRES_APP_PASSWORD must be set in .env}
       POSTGRES_DB: ${POSTGRES_DB:-verimed_db}
     ports:
-      - "${POSTGRES_PORT:-5432}:5432"
+      - "127.0.0.1:${POSTGRES_PORT:-5432}:5432"
     volumes:
       - verimed_pgdata:/var/lib/postgresql/data
       - ./infra/docker/postgres/init-pgvector.sql:/docker-entrypoint-initdb.d/01-init-pgvector.sql:ro
+      - ./infra/docker/postgres/02-create-app-role.sh:/docker-entrypoint-initdb.d/02-create-app-role.sh:ro
+    cap_drop:
+      - ALL
+    cap_add:
+      - CHOWN
+      - DAC_OVERRIDE
+      - FOWNER
+      - SETGID
+      - SETUID
+    security_opt:
+      - no-new-privileges:true
+    mem_limit: 1g
+    cpus: 1.0
     healthcheck:
       test: ["CMD-SHELL", "pg_isready -U ${POSTGRES_USER:-verimed} -d ${POSTGRES_DB:-verimed_db}"]
       interval: 5s
@@ -22,25 +37,54 @@ services:
     build:
       context: .
       dockerfile: infra/docker/api.Dockerfile
+      args:
+        INSTALL_ML: ${INSTALL_ML:-false}
     container_name: verimed-api
     restart: unless-stopped
     environment:
       APP_ENV: ${APP_ENV:-development}
-      DATABASE_URL: postgresql+asyncpg://${POSTGRES_USER:-verimed}:${POSTGRES_PASSWORD:-verimed_dev_password}@postgres:5432/${POSTGRES_DB:-verimed_db}
-      DATABASE_SYNC_URL: postgresql+psycopg://${POSTGRES_USER:-verimed}:${POSTGRES_PASSWORD:-verimed_dev_password}@postgres:5432/${POSTGRES_DB:-verimed_db}
+      DATABASE_URL: postgresql+asyncpg://${POSTGRES_APP_USER:-verimed_app}:${POSTGRES_APP_PASSWORD:?POSTGRES_APP_PASSWORD must be set in .env}@postgres:5432/${POSTGRES_DB:-verimed_db}
+      DATABASE_SYNC_URL: postgresql+psycopg://${POSTGRES_USER:-verimed}:${POSTGRES_PASSWORD:?POSTGRES_PASSWORD must be set in .env}@postgres:5432/${POSTGRES_DB:-verimed_db}
       AI_PROVIDER: ${AI_PROVIDER:-mock}
       EMBEDDING_BACKEND: ${EMBEDDING_BACKEND:-hash}
       RERANKER_BACKEND: ${RERANKER_BACKEND:-lexical}
+      EMBEDDING_MODEL_NAME: ${EMBEDDING_MODEL_NAME:-intfloat/multilingual-e5-base}
+      RERANKER_MODEL_NAME: ${RERANKER_MODEL_NAME:-cross-encoder/mmarco-mMiniLMv2-L12-H384-v1}
+      RETRIEVAL_MIN_SCORE: ${RETRIEVAL_MIN_SCORE:-0.35}
+      LLM_BASE_URL: ${LLM_BASE_URL:-}
+      LLM_API_KEY: ${LLM_API_KEY:-}
+      LLM_MODEL_NAME: ${LLM_MODEL_NAME:-gpt-4o-mini}
+      LLM_TIMEOUT_SECONDS: ${LLM_TIMEOUT_SECONDS:-20.0}
+      LLM_DAILY_CALL_BUDGET: ${LLM_DAILY_CALL_BUDGET:-500}
+      HF_HOME: /tmp/hf
       RATE_LIMIT_ENABLED: ${RATE_LIMIT_ENABLED:-true}
       RATE_LIMIT_REQUESTS_PER_MINUTE: ${RATE_LIMIT_REQUESTS_PER_MINUTE:-60}
       CORS_ORIGINS: ${CORS_ORIGINS:-["http://localhost:3000","http://127.0.0.1:3000"]}
+      ALLOWED_HOSTS: ${ALLOWED_HOSTS:-["localhost","127.0.0.1","testserver","api","verimed-api","verimed-web"]}
+      TRUSTED_PROXIES: ${TRUSTED_PROXIES:-[]}
+      REQUIRE_CLIENT_AUTH: ${REQUIRE_CLIENT_AUTH:-false}
+      CLIENT_AUTH_SECRET: ${CLIENT_AUTH_SECRET:-}
+      CLIENT_API_KEYS: ${CLIENT_API_KEYS:-[]}
+      FEEDBACK_TOKEN_SECRET: ${FEEDBACK_TOKEN_SECRET:-}
+      ANONYMIZE_PRIVATE_CLAIMS: ${ANONYMIZE_PRIVATE_CLAIMS:-true}
+      EXPOSE_API_DOCS: ${EXPOSE_API_DOCS:-}
+      EXPOSE_OPERATIONAL_METADATA: ${EXPOSE_OPERATIONAL_METADATA:-}
     ports:
       - "${API_PORT:-8000}:8000"
     depends_on:
       postgres:
         condition: service_healthy
+    cap_drop:
+      - ALL
+    security_opt:
+      - no-new-privileges:true
+    read_only: true
+    tmpfs:
+      - /tmp
+    mem_limit: 2g
+    cpus: 1.5
     healthcheck:
-      test: ["CMD-SHELL", "curl -fsS http://localhost:8000/api/v1/health || exit 1"]
+      test: ["CMD-SHELL", "curl -fsS http://localhost:8000/api/v1/health/live || exit 1"]
       interval: 15s
       timeout: 5s
       retries: 5
@@ -60,6 +104,15 @@ services:
       NEXT_PUBLIC_API_BASE_URL: ${NEXT_PUBLIC_API_BASE_URL:-http://localhost:8000/api/v1}
     ports:
       - "3000:3000"
+    cap_drop:
+      - ALL
+    security_opt:
+      - no-new-privileges:true
+    read_only: true
+    tmpfs:
+      - /tmp
+    mem_limit: 512m
+    cpus: 1.0
     depends_on:
       api:
         condition: service_healthy

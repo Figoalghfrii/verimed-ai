@@ -53,6 +53,7 @@ export type EmergencyGuidance = z.infer<typeof EmergencyGuidanceSchema>;
 
 export const ClaimVerificationResultSchema = z.object({
   claim_index: z.number(),
+  assessment_id: z.string().nullable().optional(),
   claim_text: z.string(),
   normalized_query: z.string(),
   verdict: VerdictEnum,
@@ -82,6 +83,7 @@ export const VerificationResponseDataSchema = z.object({
   processing_time_ms: z.number(),
   model_version: z.string(),
   disclaimer: z.string(),
+  feedback_token: z.string().nullable().optional(),
 });
 
 export type VerificationResponseData = z.infer<

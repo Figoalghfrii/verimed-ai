@@ -2,7 +2,7 @@
 
 from verimed_api.core.config import Settings
 from verimed_api.repositories.health_repo import HealthRepository
-from verimed_api.schemas.health import HealthCheckData
+from verimed_api.schemas.health import DatabaseHealthStatus, HealthCheckData
 
 
 class HealthService:
@@ -13,19 +13,29 @@ class HealthService:
         self._settings = settings
 
     async def get_health_status(self) -> HealthCheckData:
-        """Assemble full system health payload."""
+        """Assemble system health payload with environment-appropriate redaction."""
         db_status = await self._health_repo.check_database()
         overall_status = (
             "healthy"
             if db_status.status == "connected" and db_status.pgvector_enabled
             else "degraded"
         )
+        expose_meta = self._settings.should_expose_operational_metadata
+        safe_db_status = (
+            db_status
+            if expose_meta
+            else DatabaseHealthStatus(
+                status=db_status.status,
+                pgvector_enabled=db_status.pgvector_enabled,
+                latency_ms=None,
+            )
+        )
         return HealthCheckData(
             status=overall_status,
             service=self._settings.app_name,
-            version=self._settings.app_version,
-            environment=self._settings.app_env,
-            ai_provider=self._settings.ai_provider,
-            database=db_status,
+            version=self._settings.app_version if expose_meta else None,
+            environment=self._settings.app_env if expose_meta else None,
+            ai_provider=self._settings.ai_provider if expose_meta else None,
+            database=safe_db_status,
             disclaimer=self._settings.medical_disclaimer_id,
         )

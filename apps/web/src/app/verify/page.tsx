@@ -1,6 +1,7 @@
 "use client";
 
-import React, { useEffect, useState } from "react";
+import { useSearchParams } from "next/navigation";
+import React, { Suspense, useEffect, useState } from "react";
 import { Card } from "@/components/ui/card";
 import { useVerifyClaim } from "@/features/verification/api/use-verify-claim";
 import { AssessmentBadge } from "@/features/verification/components/assessment-badge";
@@ -8,28 +9,30 @@ import { ClaimInputForm } from "@/features/verification/components/claim-input-f
 import { VerificationResultView } from "@/features/verification/components/verification-result-view";
 import {
   clearVerificationHistory,
+  loadClaimTextOptIn,
   loadVerificationHistory,
+  saveClaimTextOptIn,
   saveVerificationToHistory,
   VerificationHistoryEntry,
 } from "@/features/verification/lib/verification-history";
 import { VerificationResponseData } from "@/features/verification/schemas/verification-schema";
 
-export default function VerifyPage() {
+function VerifyPageContent() {
+  const searchParams = useSearchParams();
+  const initialClaim = searchParams.get("claim")?.trim() ?? "";
   const { mutate, data, isPending, isError, error } = useVerifyClaim();
   const [history, setHistory] = useState<VerificationHistoryEntry[]>([]);
+  const [saveClaimOptIn, setSaveClaimOptIn] = useState(false);
   const [selectedHistoryResult, setSelectedHistoryResult] =
     useState<VerificationResponseData | null>(null);
 
   useEffect(() => {
-    setHistory(loadVerificationHistory());
+    const timer = window.setTimeout(() => {
+      setSaveClaimOptIn(loadClaimTextOptIn());
+      setHistory(loadVerificationHistory());
+    }, 0);
+    return () => window.clearTimeout(timer);
   }, []);
-
-  useEffect(() => {
-    if (data?.data && !data.data.emergency_triggered) {
-      setSelectedHistoryResult(null);
-      setHistory(saveVerificationToHistory(data.data));
-    }
-  }, [data]);
 
   const activeResult = selectedHistoryResult ?? data?.data ?? null;
 
@@ -57,9 +60,21 @@ export default function VerifyPage() {
       </section>
 
       <ClaimInputForm
+        key={initialClaim}
+        initialClaim={initialClaim}
         onSubmit={(payload) => {
           setSelectedHistoryResult(null);
-          mutate(payload);
+          mutate(payload, {
+            onSuccess: (res) => {
+              if (res.data && !res.data.emergency_triggered) {
+                setHistory(
+                  saveVerificationToHistory(res.data, {
+                    saveClaimText: saveClaimOptIn,
+                  })
+                );
+              }
+            },
+          });
         }}
         isSubmitting={isPending}
       />
@@ -113,19 +128,34 @@ export default function VerifyPage() {
               >
                 Riwayat Pemeriksaan Lokal
               </h2>
-              <p className="text-xs text-slate-600">
-                Disimpan sementara hanya di browser Anda dan dapat dihapus kapan
-                saja.
-              </p>
+                <p className="text-xs text-slate-600">
+                  Disimpan di peramban selama maks. 24 jam. Secara bawaan teks
+                  klaim kesehatan tidak disimpan.
+                </p>
+              </div>
+              <div className="flex flex-wrap items-center gap-3">
+                <label className="inline-flex cursor-pointer items-center gap-1.5 text-xs text-slate-700">
+                  <input
+                    type="checkbox"
+                    checked={saveClaimOptIn}
+                    onChange={(event) => {
+                      const next = event.target.checked;
+                      setSaveClaimOptIn(next);
+                      saveClaimTextOptIn(next);
+                    }}
+                    className="h-3.5 w-3.5 rounded border-slate-300 text-brand-600 focus:ring-brand-500"
+                  />
+                  <span>Simpan teks klaim</span>
+                </label>
+                <button
+                  type="button"
+                  onClick={handleClearHistory}
+                  className="rounded-full border border-slate-200 bg-white px-3.5 py-1.5 text-xs font-semibold text-slate-700 transition hover:border-rose-300 hover:bg-rose-50 hover:text-rose-700"
+                >
+                  Hapus Riwayat
+                </button>
+              </div>
             </div>
-            <button
-              type="button"
-              onClick={handleClearHistory}
-              className="rounded-full border border-slate-200 bg-white px-3.5 py-1.5 text-xs font-semibold text-slate-700 transition hover:border-rose-300 hover:bg-rose-50 hover:text-rose-700"
-            >
-              Hapus Riwayat
-            </button>
-          </div>
 
           <ul className="space-y-2">
             {history.map((entry) => {
@@ -160,5 +190,21 @@ export default function VerifyPage() {
         </Card>
       )}
     </div>
+  );
+}
+
+export default function VerifyPage() {
+  return (
+    <Suspense
+      fallback={
+        <Card as="section" ariaLabelledBy="verify-loading-fallback">
+          <p id="verify-loading-fallback" className="text-sm text-slate-600">
+            Memuat formulir verifikasi klaim VeriMed...
+          </p>
+        </Card>
+      }
+    >
+      <VerifyPageContent />
+    </Suspense>
   );
 }

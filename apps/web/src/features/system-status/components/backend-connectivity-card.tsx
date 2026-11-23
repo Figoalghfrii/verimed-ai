@@ -107,7 +107,9 @@ export function BackendConnectivityCard() {
                 </span>
               </div>
               <p className="mt-1 text-xs text-slate-600">
-                {health.service} v{health.version} ({health.environment})
+                {health.service}
+                {health.version ? ` v${health.version}` : ""}
+                {health.environment ? ` (${health.environment})` : ""}
               </p>
             </div>
 
@@ -144,9 +146,17 @@ export function BackendConnectivityCard() {
                 Mode Penyedia AI
               </span>
               <div className="mt-1.5">
-                <span className="inline-flex items-center rounded-full bg-amber-100 px-3 py-1 text-xs font-semibold text-amber-900">
-                  {health.ai_provider.toUpperCase()}
-                  {meta?.is_demonstration ? " (Mode Demonstrasi)" : ""}
+                <span
+                  className={`inline-flex items-center rounded-full px-3 py-1 text-xs font-semibold ${
+                    meta?.is_demonstration
+                      ? "bg-amber-100 text-amber-900"
+                      : "bg-emerald-100 text-emerald-900"
+                  }`}
+                >
+                  {health.ai_provider
+                    ? health.ai_provider.toUpperCase()
+                    : "TERKONFIGURASI"}
+                  {meta?.is_demonstration ? " (Mode Demonstrasi)" : " (Aktif)"}
                 </span>
               </div>
               <p className="mt-1 text-xs text-slate-600">
@@ -160,12 +170,16 @@ export function BackendConnectivityCard() {
               <span className="text-xs font-semibold uppercase tracking-wider text-slate-500">
                 Korpus Bukti Terindeks &amp; Konfigurasi Retrieval
               </span>
-              {stats && (
+              {stats && (stats.embedding_backend || stats.reranker_backend) && (
                 <span className="rounded-full bg-white px-2.5 py-0.5 text-[11px] font-medium text-slate-600 shadow-sm">
                   Embedding:{" "}
-                  <code className="font-mono">{stats.embedding_backend}</code>{" "}
+                  <code className="font-mono">
+                    {stats.embedding_backend ?? "terlindungi"}
+                  </code>{" "}
                   • Reranker:{" "}
-                  <code className="font-mono">{stats.reranker_backend}</code>
+                  <code className="font-mono">
+                    {stats.reranker_backend ?? "terlindungi"}
+                  </code>
                 </span>
               )}
             </div>
@@ -204,7 +218,9 @@ export function BackendConnectivityCard() {
                     Pipeline Aktif
                   </p>
                   <p className="mt-0.5 text-lg font-bold text-slate-900">
-                    {stats.ai_provider.toUpperCase()}
+                    {stats.ai_provider
+                      ? stats.ai_provider.toUpperCase()
+                      : "PRODUKSI"}
                   </p>
                   <p className="text-[11px] text-slate-600">
                     {stats.documents_count === 0

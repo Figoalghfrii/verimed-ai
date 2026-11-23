@@ -29,6 +29,11 @@ class FeedbackRequestInput(BaseModel):
         max_length=500,
         description="Optional sanitized feedback comment up to 500 characters.",
     )
+    feedback_token: str | None = Field(
+        default=None,
+        max_length=1024,
+        description="Server-issued HMAC token tying feedback to a verification response.",
+    )
 
     @field_validator("comment", mode="before")
     @classmethod

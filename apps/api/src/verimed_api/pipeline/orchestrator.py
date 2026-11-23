@@ -2,6 +2,7 @@
 
 from dataclasses import dataclass, field
 
+from verimed_api.core.logging import log_security_event
 from verimed_api.pipeline.interfaces import (
     VERDICT_LABELS_ID,
     CitationValidatorProtocol,
@@ -14,6 +15,7 @@ from verimed_api.pipeline.interfaces import (
     RetrievedChunkCandidate,
     SafetyGuardProtocol,
 )
+from verimed_api.pipeline.providers.hybrid_grounded_provider import HybridGroundedExplainer
 from verimed_api.schemas.evidence import EvidenceSourceItem
 from verimed_api.schemas.verification import ClaimVerificationResult, EmergencyGuidance
 
@@ -90,6 +92,12 @@ class VerificationPipelineOrchestrator:
     async def run(self, raw_text: str, language: str = "id") -> PipelineExecutionOutput:
         """Execute input safety screening, extraction, retrieval, assessment, and citation check."""
         safety = self._safety_guard.screen_input(raw_text)
+        if safety.injection_attempts_stripped > 0:
+            log_security_event(
+                "prompt_injection_stripped",
+                outcome="sanitized",
+                details={"stripped_count": safety.injection_attempts_stripped},
+            )
         if safety.is_emergency:
             return PipelineExecutionOutput(
                 emergency_triggered=True,
@@ -129,7 +137,27 @@ class VerificationPipelineOrchestrator:
             citations_valid, validated_draft = self._citation_validator.validate(
                 draft=draft,
                 evidence=reranked,
+                allow_empty_on_abstention=assessment.abstained,
             )
+            if not citations_valid and not assessment.abstained and reranked:
+                log_security_event(
+                    "citation_validation_failed_fallback",
+                    outcome="fallback",
+                    details={"claim_index": idx},
+                )
+                deterministic_draft = await HybridGroundedExplainer(
+                    safety_guard=self._safety_guard
+                ).explain(
+                    claim_text=claim_text,
+                    assessment=assessment,
+                    evidence=reranked,
+                    language=language,
+                )
+                citations_valid, validated_draft = self._citation_validator.validate(
+                    draft=deterministic_draft,
+                    evidence=reranked,
+                    allow_empty_on_abstention=assessment.abstained,
+                )
 
             sources = [
                 EvidenceSourceItem(

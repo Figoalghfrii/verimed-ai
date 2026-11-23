@@ -1,5 +1,6 @@
 """Pluggable multilingual embedding providers (offline deterministic hash & SentenceTransformer)."""
 
+import asyncio
 import hashlib
 import math
 import re
@@ -76,16 +77,16 @@ class SentenceTransformerEmbeddingProvider:
         return self._model
 
     async def embed_documents(self, texts: list[str]) -> list[list[float]]:
-        """Encode passages using E5 `passage:` prefix."""
+        """Encode passages using E5 `passage:` prefix without blocking event loop."""
         if not texts:
             return []
         model = self._get_model()
         prefixed = [f"passage: {t}" for t in texts]
-        vectors = model.encode(prefixed, normalize_embeddings=True)
+        vectors = await asyncio.to_thread(model.encode, prefixed, normalize_embeddings=True)
         return [vec.tolist() for vec in vectors]
 
     async def embed_query(self, text: str) -> list[float]:
-        """Encode query using E5 `query:` prefix."""
+        """Encode query using E5 `query:` prefix without blocking event loop."""
         model = self._get_model()
-        vector = model.encode(f"query: {text}", normalize_embeddings=True)
+        vector = await asyncio.to_thread(model.encode, f"query: {text}", normalize_embeddings=True)
         return list(vector.tolist())

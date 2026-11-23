@@ -1,5 +1,6 @@
 """Reranking implementations: lightweight lexical overlap reranker and optional CrossEncoder."""
 
+import asyncio
 import math
 import re
 from dataclasses import replace
@@ -30,12 +31,85 @@ STOPWORDS_ID: frozenset[str] = frozenset(
         "tidak",
     }
 )
+STOPWORDS_EN: frozenset[str] = frozenset(
+    {
+        "the",
+        "and",
+        "for",
+        "with",
+        "from",
+        "that",
+        "this",
+        "are",
+        "was",
+        "were",
+        "can",
+        "could",
+        "will",
+        "would",
+        "not",
+        "does",
+        "did",
+        "has",
+        "have",
+        "had",
+        "all",
+        "into",
+        "about",
+        "use",
+        "using",
+    }
+)
+STOPWORDS: frozenset[str] = STOPWORDS_ID | STOPWORDS_EN
+
+BILINGUAL_TOKEN_ALIASES: dict[str, frozenset[str]] = {
+    "washing": frozenset({"cuci", "mencuci"}),
+    "wash": frozenset({"cuci", "mencuci"}),
+    "handwashing": frozenset({"cuci", "mencuci", "tangan"}),
+    "hands": frozenset({"tangan"}),
+    "hand": frozenset({"tangan"}),
+    "soap": frozenset({"sabun"}),
+    "running": frozenset({"mengalir"}),
+    "water": frozenset({"air"}),
+    "prevents": frozenset({"mencegah", "pencegahan"}),
+    "prevent": frozenset({"mencegah", "pencegahan"}),
+    "reduces": frozenset({"menurunkan", "mengurangi"}),
+    "reduce": frozenset({"menurunkan", "mengurangi"}),
+    "risk": frozenset({"risiko"}),
+    "diarrhea": frozenset({"diare"}),
+    "respiratory": frozenset({"pernapasan"}),
+    "infections": frozenset({"infeksi"}),
+    "infection": frozenset({"infeksi"}),
+    "antibiotic": frozenset({"antibiotik"}),
+    "antibiotics": frozenset({"antibiotik"}),
+    "virus": frozenset({"virus"}),
+    "viral": frozenset({"virus"}),
+    "flu": frozenset({"flu", "influenza"}),
+    "cold": frozenset({"pilek"}),
+    "soursop": frozenset({"sirsak"}),
+    "cancer": frozenset({"kanker"}),
+    "chemotherapy": frozenset({"kemoterapi"}),
+    "cure": frozenset({"menyembuhkan", "penyembuh"}),
+    "cures": frozenset({"menyembuhkan"}),
+    "herbal": frozenset({"herbal", "jamu", "tradisional"}),
+    "vaccine": frozenset({"vaksin", "vaksinasi", "imunisasi"}),
+    "vaccines": frozenset({"vaksin", "vaksinasi", "imunisasi"}),
+    "vaccination": frozenset({"vaksinasi", "vaksin", "imunisasi"}),
+    "immunization": frozenset({"imunisasi", "vaksinasi"}),
+    "measles": frozenset({"campak"}),
+    "sugar": frozenset({"gula", "glukosa"}),
+    "salt": frozenset({"garam", "natrium"}),
+    "fat": frozenset({"lemak"}),
+    "hypertension": frozenset({"hipertensi", "tekanan", "darah"}),
+    "dengue": frozenset({"dengue", "dbd"}),
+    "breastfeeding": frozenset({"asi", "menyusui"}),
+    "stunting": frozenset({"stunting"}),
+    "cervical": frozenset({"serviks"}),
+}
 
 
 def _content_tokens(text: str) -> set[str]:
-    return {
-        tok for tok in WORD_RE.findall(text.lower()) if len(tok) > 2 and tok not in STOPWORDS_ID
-    }
+    return {tok for tok in WORD_RE.findall(text.lower()) if len(tok) > 2 and tok not in STOPWORDS}
 
 
 class LexicalOverlapReranker:
@@ -47,7 +121,7 @@ class LexicalOverlapReranker:
         candidates: list[RetrievedChunkCandidate],
         min_score: float = 0.35,
     ) -> list[RetrievedChunkCandidate]:
-        """Rescore candidates via token overlap + retrieval score and filter by threshold."""
+        """Rescore candidates via bilingual-aware token overlap + retrieval score."""
         if not candidates:
             return []
 
@@ -57,7 +131,13 @@ class LexicalOverlapReranker:
         for candidate in candidates:
             chunk_tokens = _content_tokens(f"{candidate.title} {candidate.chunk_text}")
             if claim_tokens and chunk_tokens:
-                overlap = len(claim_tokens & chunk_tokens) / len(claim_tokens)
+                matched_count = sum(
+                    1
+                    for tok in claim_tokens
+                    if tok in chunk_tokens
+                    or bool(BILINGUAL_TOKEN_ALIASES.get(tok, frozenset()) & chunk_tokens)
+                )
+                overlap = matched_count / len(claim_tokens)
             else:
                 overlap = 0.0
 
@@ -106,7 +186,7 @@ class CrossEncoderReranker:
 
         model = self._get_model()
         pairs = [(claim_text, candidate.chunk_text) for candidate in candidates]
-        raw_scores = model.predict(pairs)
+        raw_scores = await asyncio.to_thread(model.predict, pairs)
 
         rescored: list[RetrievedChunkCandidate] = []
         for candidate, raw_logit in zip(candidates, raw_scores, strict=True):

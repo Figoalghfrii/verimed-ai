@@ -6,10 +6,20 @@ from fastapi import APIRouter, Depends
 
 from verimed_api.api.deps import get_health_service
 from verimed_api.schemas.common import ApiResponse
-from verimed_api.schemas.health import HealthCheckData
+from verimed_api.schemas.health import HealthCheckData, LivenessData
 from verimed_api.services.health_service import HealthService
 
 router = APIRouter(tags=["health"])
+
+
+@router.get(
+    "/health/live",
+    response_model=ApiResponse[LivenessData],
+    summary="Minimal liveness probe without database or operational metadata",
+)
+async def check_liveness() -> ApiResponse[LivenessData]:
+    """Return unprivileged liveness indicator for container probes."""
+    return ApiResponse[LivenessData](data=LivenessData())
 
 
 @router.get(

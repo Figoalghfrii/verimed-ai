@@ -50,17 +50,26 @@ export function VerificationResultView({
             Waktu proses: {result.processing_time_ms} ms
           </span>
           {!result.emergency_triggered && result.claims.length > 0 && (
-            <button
-              type="button"
-              onClick={() => void handleCopySummary()}
-              className="inline-flex items-center rounded-full border border-brand-200 bg-white px-3.5 py-1.5 text-xs font-semibold text-brand-700 shadow-sm transition hover:border-brand-400 hover:bg-brand-50"
-            >
-              {copyStatus === "copied"
-                ? "Ringkasan Disalin!"
-                : copyStatus === "failed"
-                  ? "Gagal Menyalin"
-                  : "Salin Ringkasan Bukti"}
-            </button>
+            <div className="flex flex-wrap items-center gap-2 print:hidden">
+              <button
+                type="button"
+                onClick={() => void handleCopySummary()}
+                className="inline-flex items-center rounded-full border border-brand-200 bg-white px-3.5 py-1.5 text-xs font-semibold text-brand-700 shadow-sm transition hover:border-brand-400 hover:bg-brand-50"
+              >
+                {copyStatus === "copied"
+                  ? "Ringkasan Disalin!"
+                  : copyStatus === "failed"
+                    ? "Gagal Menyalin"
+                    : "Salin Ringkasan Bukti"}
+              </button>
+              <button
+                type="button"
+                onClick={() => window.print()}
+                className="inline-flex items-center rounded-full border border-slate-200 bg-white px-3.5 py-1.5 text-xs font-semibold text-slate-700 shadow-sm transition hover:border-slate-300 hover:bg-slate-50"
+              >
+                Cetak / Simpan PDF
+              </button>
+            </div>
           )}
         </div>
       </div>
@@ -159,10 +168,14 @@ export function VerificationResultView({
         ))}
 
       {!result.emergency_triggered && (
-        <FeedbackWidget
-          requestId={result.request_id}
-          persisted={result.persisted}
-        />
+        <div className="print:hidden">
+          <FeedbackWidget
+            requestId={result.request_id}
+            assessmentId={result.claims[0]?.assessment_id ?? null}
+            feedbackToken={result.feedback_token ?? null}
+            persisted={result.persisted}
+          />
+        </div>
       )}
 
       <div

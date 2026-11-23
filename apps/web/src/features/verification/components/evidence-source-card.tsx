@@ -1,5 +1,6 @@
 import React from "react";
 import { Badge } from "@/components/ui/badge";
+import { getSafeExternalUrl } from "@/lib/safe-url";
 import { EvidenceSourceItem } from "../schemas/verification-schema";
 
 const STANCE_CONFIG: Record<
@@ -13,6 +14,9 @@ const STANCE_CONFIG: Record<
 
 export function EvidenceSourceCard({ source }: { source: EvidenceSourceItem }) {
   const stanceInfo = STANCE_CONFIG[source.stance];
+  const safeExternalUrl = source.is_synthetic_demo
+    ? null
+    : getSafeExternalUrl(source.source_url);
 
   return (
     <article className="rounded-2xl border border-slate-200/80 bg-canvas p-5 transition hover:border-brand-200">
@@ -44,7 +48,19 @@ export function EvidenceSourceCard({ source }: { source: EvidenceSourceItem }) {
       </blockquote>
 
       <p className="mt-2.5 text-xs text-slate-500 break-all">
-        Referensi sumber: <span className="font-mono">{source.source_url}</span>
+        Referensi sumber:{" "}
+        {safeExternalUrl ? (
+          <a
+            href={safeExternalUrl}
+            target="_blank"
+            rel="noopener noreferrer nofollow"
+            className="font-mono font-semibold text-brand-600 underline decoration-brand-300 underline-offset-2 hover:text-brand-700"
+          >
+            {safeExternalUrl}
+          </a>
+        ) : (
+          <span className="font-mono">{source.source_url}</span>
+        )}
       </p>
     </article>
   );

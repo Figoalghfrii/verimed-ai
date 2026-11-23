@@ -14,9 +14,13 @@ const CATEGORY_OPTIONS: Array<{ value: FeedbackCategory; label: string }> = [
 
 export function FeedbackWidget({
   requestId,
+  assessmentId = null,
+  feedbackToken = null,
   persisted,
 }: {
   requestId: string;
+  assessmentId?: string | null;
+  feedbackToken?: string | null;
   persisted: boolean;
 }) {
   const [selectedHelpful, setSelectedHelpful] = useState<boolean | null>(null);
@@ -38,9 +42,11 @@ export function FeedbackWidget({
 
     const parsed = FeedbackInputSchema.safeParse({
       request_id: requestId,
+      assessment_id: assessmentId ?? null,
       is_helpful: selectedHelpful,
       feedback_category: category,
       comment: comment.trim() ? comment.trim() : null,
+      feedback_token: feedbackToken ?? null,
     });
 
     if (!parsed.success) {

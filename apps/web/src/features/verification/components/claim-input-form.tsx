@@ -64,13 +64,15 @@ const SAMPLE_CLAIMS_BY_LANG: Record<
 interface ClaimInputFormProps {
   onSubmit: (payload: VerifyClaimInput) => void;
   isSubmitting: boolean;
+  initialClaim?: string;
 }
 
 export function ClaimInputForm({
   onSubmit,
   isSubmitting,
+  initialClaim = "",
 }: ClaimInputFormProps) {
-  const [text, setText] = useState("");
+  const [text, setText] = useState(initialClaim);
   const [language, setLanguage] = useState<"id" | "en">("id");
   const [validationError, setValidationError] = useState<string | null>(null);
 

@@ -16,22 +16,39 @@ from verimed_api.pipeline.interfaces import (
 CONTRADICTION_CUES_RE = re.compile(
     r"\b(tidak\s+efektif|tidak\s+terbukti|belum\s+ada\s+bukti|bukan\s+obat|"
     r"tidak\s+dapat\s+menyembuhkan|tidak\s+menggantikan|tidak\s+benar|tidak\s+aman|"
-    r"mitos|keliru)\b",
+    r"tidak\s+boleh\s+diklaim|mitos|keliru|"
+    r"not\s+effective|ineffective|no\s+clinical\s+evidence|unproven|does\s+not\s+cure|"
+    r"cannot\s+cure|not\s+a\s+cure|does\s+not\s+prevent|not\s+effective\s+against|"
+    r"no\s+specific\s+treatment|myth)\b",
     re.IGNORECASE,
 )
 SUPPORT_CUES_RE = re.compile(
     r"\b(membantu\s+menurunkan|terbukti\s+efektif|direkomendasikan|melindungi|"
-    r"mencegah\s+penularan|aman\s+dan\s+efektif|dianjurkan)\b",
+    r"mencegah\s+penularan|aman\s+dan\s+efektif|dianjurkan|menganjurkan|cara\s+efektif|"
+    r"proven\s+effective|reduces\s+(?:the\s+)?risk|safe\s+and\s+effective|"
+    r"effectively\s+prevents|critical\s+to\s+preventing|prevents\s+transmission|"
+    r"recommended\s+(?:to|for))\b",
     re.IGNORECASE,
 )
 MIXED_CUES_RE = re.compile(
     r"\b(beragam|inkonsisten|bergantung\s+pada\s+kelompok|tidak\s+konsisten|"
-    r"masih\s+terbatas|sebagian\s+studi)\b",
+    r"masih\s+terbatas|sebagian\s+studi|tidak\s+menurunkan\s+risiko.*mempersingkat|"
+    r"mixed|inconsistent|modestly|does\s+not\s+reduce\s+(?:the\s+)?risk.*shorten|"
+    r"depends\s+on\s+(?:group|context))\b",
+    re.IGNORECASE,
+)
+CLAIM_NEGATION_RE = re.compile(
+    r"(?:^|\s)(tidak|bukan|tak|belum|does\s+not|do\s+not|cannot|can't|doesn't|"
+    r"don't|isn't|aren't|never|not\s+(?:cure|prevent|cause|effective))\b",
     re.IGNORECASE,
 )
 
 
-def _infer_chunk_stance(chunk_text: str) -> CitationStanceType:
+def _is_negated_claim(claim_text: str) -> bool:
+    return bool(CLAIM_NEGATION_RE.search(claim_text))
+
+
+def _infer_raw_passage_stance(chunk_text: str) -> CitationStanceType:
     has_contra = bool(CONTRADICTION_CUES_RE.search(chunk_text))
     has_support = bool(SUPPORT_CUES_RE.search(chunk_text))
     if has_contra and not has_support:
@@ -39,6 +56,16 @@ def _infer_chunk_stance(chunk_text: str) -> CitationStanceType:
     if has_support and not has_contra:
         return "SUPPORTING"
     return "CONTEXTUAL"
+
+
+def _infer_chunk_stance(chunk_text: str, claim_text: str = "") -> CitationStanceType:
+    raw_stance = _infer_raw_passage_stance(chunk_text)
+    if claim_text and _is_negated_claim(claim_text):
+        if raw_stance == "CONTRADICTING":
+            return "SUPPORTING"
+        if raw_stance == "SUPPORTING":
+            return "CONTRADICTING"
+    return raw_stance
 
 
 class HybridGroundedAssessor:
@@ -54,7 +81,6 @@ class HybridGroundedAssessor:
         language: str = "id",
     ) -> EvidenceAssessmentResult:
         """Determine evidence verdict and enforce strict abstention when evidence is weak."""
-        del claim_text
         if not evidence or evidence[0].rerank_score < self._min_confidence:
             return EvidenceAssessmentResult(
                 verdict="INSUFFICIENT_EVIDENCE",
@@ -82,10 +108,10 @@ class HybridGroundedAssessor:
         focused_evidence = [
             chunk
             for chunk in evidence
-            if chunk.rerank_score >= max(self._min_confidence, top_score * 0.65)
+            if chunk.rerank_score >= max(self._min_confidence, top_score * 0.85)
         ] or [evidence[0]]
 
-        stances = {_infer_chunk_stance(chunk.chunk_text) for chunk in focused_evidence}
+        stances = {_infer_chunk_stance(chunk.chunk_text, claim_text) for chunk in focused_evidence}
         has_mixed_cue = any(MIXED_CUES_RE.search(chunk.chunk_text) for chunk in focused_evidence)
 
         if has_mixed_cue or ("SUPPORTING" in stances and "CONTRADICTING" in stances):
@@ -148,7 +174,6 @@ class HybridGroundedExplainer:
         language: str = "id",
     ) -> ExplanationDraft:
         """Assemble grounded explanation referencing only retrieved evidence chunks."""
-        del claim_text
         if assessment.abstained or not evidence:
             return ExplanationDraft(
                 explanation=(
@@ -170,7 +195,7 @@ class HybridGroundedExplainer:
             key = f"[{idx}]"
             _isolated = self._safety_guard.wrap_untrusted_evidence(key, chunk.chunk_text)
             del _isolated
-            inferred_stance = _infer_chunk_stance(chunk.chunk_text)
+            inferred_stance = _infer_chunk_stance(chunk.chunk_text, claim_text)
             citations.append(
                 CitationEntry(
                     citation_key=key,

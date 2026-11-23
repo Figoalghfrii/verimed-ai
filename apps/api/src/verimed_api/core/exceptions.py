@@ -1,10 +1,14 @@
 """Domain exceptions and FastAPI exception handlers returning ErrorResponse envelopes."""
 
+import logging
+
 from fastapi import FastAPI, HTTPException, Request, status
 from fastapi.exceptions import RequestValidationError
 from fastapi.responses import JSONResponse
 
 from verimed_api.schemas.common import ErrorBody, ErrorDetail, ErrorResponse
+
+logger = logging.getLogger(__name__)
 
 
 class AppError(Exception):
@@ -75,5 +79,25 @@ def register_exception_handlers(app: FastAPI) -> None:
         )
         return JSONResponse(
             status_code=exc.status_code,
+            content=payload.model_dump(mode="json"),
+        )
+
+    @app.exception_handler(Exception)
+    async def handle_unhandled_exception(request: Request, _exc: Exception) -> JSONResponse:
+        request_id = getattr(request.state, "request_id", None)
+        logger.exception(
+            "Unhandled internal server error [request_id=%s, path=%s]",
+            request_id,
+            request.url.path,
+        )
+        payload = ErrorResponse(
+            error=ErrorBody(
+                code="INTERNAL_SERVER_ERROR",
+                message="Terjadi kesalahan internal pada server.",
+                details=[],
+            )
+        )
+        return JSONResponse(
+            status_code=500,
             content=payload.model_dump(mode="json"),
         )

@@ -85,9 +85,12 @@ class EvidenceRepository:
         self._session = session
 
     async def upsert_document_with_chunks(
-        self, record: EvidenceDocumentRecord
+        self,
+        record: EvidenceDocumentRecord,
+        *,
+        force_reembed: bool = False,
     ) -> tuple[uuid.UUID, bool]:
-        """Insert document and chunks idempotently by content_hash.
+        """Insert document and chunks idempotently by content_hash, optionally re-embedding.
 
         Returns `(document_id, created_new)`.
         """
@@ -95,6 +98,52 @@ class EvidenceRepository:
             select(EvidenceDocument.id).where(EvidenceDocument.content_hash == record.content_hash)
         )
         if existing_id is not None:
+            if not force_reembed:
+                return existing_id, False
+
+            existing_doc = await self._session.get(EvidenceDocument, existing_id)
+            if existing_doc is not None:
+                existing_doc.source_name = record.source_name
+                existing_doc.source_url = record.source_url
+                existing_doc.authors = record.authors
+                existing_doc.publication_date = record.publication_date
+                existing_doc.retrieved_at = record.retrieved_at
+                existing_doc.language_code = record.language_code
+                existing_doc.source_type = record.source_type
+                existing_doc.content_version += 1
+
+            existing_chunks = (
+                await self._session.scalars(
+                    select(EvidenceChunk)
+                    .where(EvidenceChunk.document_id == existing_id)
+                    .order_by(EvidenceChunk.chunk_index.asc())
+                )
+            ).all()
+            existing_by_idx = {c.chunk_index: c for c in existing_chunks}
+
+            for chunk in record.chunks:
+                existing_chunk = existing_by_idx.get(chunk.chunk_index)
+                if existing_chunk is not None:
+                    existing_chunk.chunk_text = chunk.chunk_text
+                    existing_chunk.token_count = chunk.token_count
+                    existing_chunk.embedding = chunk.embedding
+                    existing_chunk.search_vector = func.to_tsvector("simple", chunk.chunk_text)
+                    existing_chunk.content_version += 1
+                else:
+                    self._session.add(
+                        EvidenceChunk(
+                            id=uuid.uuid4(),
+                            document_id=existing_id,
+                            chunk_index=chunk.chunk_index,
+                            chunk_text=chunk.chunk_text,
+                            token_count=chunk.token_count,
+                            embedding=chunk.embedding,
+                            search_vector=func.to_tsvector("simple", chunk.chunk_text),
+                            content_version=1,
+                        )
+                    )
+
+            await self._session.commit()
             return existing_id, False
 
         doc_id = uuid.uuid4()
@@ -248,11 +297,12 @@ class EvidenceRepository:
         if source_type:
             filters.append(EvidenceDocument.source_type == source_type)
         if search:
-            pattern = f"%{search}%"
+            escaped = search.replace("\\", "\\\\").replace("%", "\\%").replace("_", "\\_")
+            pattern = f"%{escaped}%"
             filters.append(
                 or_(
-                    EvidenceDocument.title.ilike(pattern),
-                    EvidenceDocument.source_name.ilike(pattern),
+                    EvidenceDocument.title.ilike(pattern, escape="\\"),
+                    EvidenceDocument.source_name.ilike(pattern, escape="\\"),
                 )
             )
 

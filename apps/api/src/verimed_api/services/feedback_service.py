@@ -4,9 +4,12 @@ import logging
 import uuid
 
 from fastapi import status
-from sqlalchemy.exc import SQLAlchemyError
+from sqlalchemy.exc import IntegrityError, SQLAlchemyError
 
+from verimed_api.core.config import Settings, get_settings
 from verimed_api.core.exceptions import AppError
+from verimed_api.core.logging import log_security_event
+from verimed_api.core.security import verify_signed_token
 from verimed_api.repositories.feedback_repo import FeedbackRepository
 from verimed_api.schemas.feedback import (
     FeedbackRequestInput,
@@ -20,12 +23,64 @@ logger = logging.getLogger(__name__)
 class FeedbackService:
     """Validates feedback references and stores anonymous explanation ratings."""
 
-    def __init__(self, feedback_repo: FeedbackRepository) -> None:
+    def __init__(
+        self,
+        feedback_repo: FeedbackRepository,
+        settings: Settings | None = None,
+    ) -> None:
         self._feedback_repo = feedback_repo
+        self._settings = settings or get_settings()
+
+    def _validate_feedback_token(self, payload: FeedbackRequestInput) -> None:
+        if not self._settings.require_feedback_token:
+            return
+        if not payload.feedback_token:
+            log_security_event(
+                "feedback_token_missing",
+                outcome="blocked",
+                details={"request_id": str(payload.request_id)},
+            )
+            raise AppError(
+                code="INVALID_FEEDBACK_TOKEN",
+                message="Token masukan tidak valid atau tidak disertakan.",
+                status_code=status.HTTP_403_FORBIDDEN,
+            )
+        claims = verify_signed_token(
+            payload.feedback_token,
+            secret=self._settings.effective_feedback_token_secret,
+        )
+        if not claims or claims.get("request_id") != str(payload.request_id):
+            log_security_event(
+                "feedback_token_invalid",
+                outcome="blocked",
+                details={"request_id": str(payload.request_id)},
+            )
+            raise AppError(
+                code="INVALID_FEEDBACK_TOKEN",
+                message="Token masukan tidak valid atau kedaluwarsa.",
+                status_code=status.HTTP_403_FORBIDDEN,
+            )
+        allowed_assessments = claims.get("assessment_ids")
+        if (
+            payload.assessment_id is not None
+            and isinstance(allowed_assessments, list)
+            and str(payload.assessment_id) not in allowed_assessments
+        ):
+            log_security_event(
+                "feedback_token_assessment_mismatch",
+                outcome="blocked",
+                details={"request_id": str(payload.request_id)},
+            )
+            raise AppError(
+                code="INVALID_FEEDBACK_TOKEN",
+                message="Token masukan tidak sesuai dengan penilaian yang dirujuk.",
+                status_code=status.HTTP_403_FORBIDDEN,
+            )
 
     async def submit_feedback(self, payload: FeedbackRequestInput) -> FeedbackResponseData:
-        """Persist user clarity feedback when DB is available and parent IDs exist."""
+        """Persist user clarity feedback when token is valid, DB is up, and not duplicated."""
         feedback_id = uuid.uuid4()
+        self._validate_feedback_token(payload)
 
         try:
             exists = await self._feedback_repo.request_exists(payload.request_id)
@@ -67,14 +122,31 @@ class FeedbackService:
                     status_code=status.HTTP_404_NOT_FOUND,
                 )
 
-        await self._feedback_repo.create_feedback(
-            feedback_id=feedback_id,
+        if await self._feedback_repo.feedback_exists(
             request_id=payload.request_id,
             assessment_id=payload.assessment_id,
-            is_helpful=payload.is_helpful,
-            feedback_category=payload.feedback_category,
-            comment_sanitized=payload.comment,
-        )
+        ):
+            raise AppError(
+                code="DUPLICATE_FEEDBACK",
+                message="Masukan untuk hasil verifikasi ini sudah pernah dikirimkan.",
+                status_code=status.HTTP_409_CONFLICT,
+            )
+
+        try:
+            await self._feedback_repo.create_feedback(
+                feedback_id=feedback_id,
+                request_id=payload.request_id,
+                assessment_id=payload.assessment_id,
+                is_helpful=payload.is_helpful,
+                feedback_category=payload.feedback_category,
+                comment_sanitized=payload.comment,
+            )
+        except IntegrityError as exc:
+            raise AppError(
+                code="DUPLICATE_FEEDBACK",
+                message="Masukan untuk hasil verifikasi ini sudah pernah dikirimkan.",
+                status_code=status.HTTP_409_CONFLICT,
+            ) from exc
 
         return FeedbackResponseData(
             feedback_id=str(feedback_id),

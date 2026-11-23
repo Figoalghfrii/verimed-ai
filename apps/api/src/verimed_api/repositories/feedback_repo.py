@@ -53,6 +53,21 @@ class FeedbackRepository:
         result = await self._session.execute(stmt)
         return result.scalar_one_or_none() is not None
 
+    async def feedback_exists(
+        self,
+        *,
+        request_id: uuid.UUID,
+        assessment_id: uuid.UUID | None,
+    ) -> bool:
+        """Return True if feedback already exists for the same request/assessment pair."""
+        stmt = select(UserFeedback.id).where(UserFeedback.request_id == request_id)
+        if assessment_id is not None:
+            stmt = stmt.where(UserFeedback.assessment_id == assessment_id)
+        else:
+            stmt = stmt.where(UserFeedback.assessment_id.is_(None))
+        result = await self._session.execute(stmt)
+        return result.scalar_one_or_none() is not None
+
     async def create_feedback(
         self,
         *,

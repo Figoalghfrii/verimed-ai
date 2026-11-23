@@ -34,9 +34,9 @@ class EvidenceStatsData(BaseModel):
     documents_count: int = Field(..., ge=0)
     chunks_count: int = Field(..., ge=0)
     synthetic_documents_count: int = Field(..., ge=0)
-    ai_provider: str
-    embedding_backend: str
-    reranker_backend: str
+    ai_provider: str | None = None
+    embedding_backend: str | None = None
+    reranker_backend: str | None = None
 
 
 class EvidenceDocumentItem(BaseModel):

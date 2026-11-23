@@ -18,6 +18,8 @@ class ProgrammaticCitationValidator:
         self,
         draft: ExplanationDraft,
         evidence: list[RetrievedChunkCandidate],
+        *,
+        allow_empty_on_abstention: bool = True,
     ) -> tuple[bool, ExplanationDraft]:
         """Verify every [n] marker against provided retrieved evidence."""
         valid_by_key: dict[str, CitationEntry] = {
@@ -33,12 +35,21 @@ class ProgrammaticCitationValidator:
         }
 
         referenced_keys = set(CITATION_MARKER_RE.findall(draft.explanation))
+        if evidence and not referenced_keys and not allow_empty_on_abstention:
+            return False, ExplanationDraft(explanation=draft.explanation, citations=[])
+
+        if not referenced_keys:
+            return True, ExplanationDraft(explanation=draft.explanation, citations=[])
+
         all_markers_valid = referenced_keys.issubset(set(verified_entries.keys()))
 
         if all_markers_valid:
             ordered = [
                 verified_entries[key]
-                for key in sorted(verified_entries.keys(), key=lambda k: int(k.strip("[]")))
+                for key in sorted(
+                    referenced_keys & set(verified_entries.keys()),
+                    key=lambda k: int(k.strip("[]")),
+                )
             ]
             return True, ExplanationDraft(explanation=draft.explanation, citations=ordered)
 
@@ -48,8 +59,12 @@ class ProgrammaticCitationValidator:
             draft.explanation,
         )
         sanitized_explanation = re.sub(r"\s{2,}", " ", sanitized_explanation).strip()
+        remaining_keys = set(CITATION_MARKER_RE.findall(sanitized_explanation))
         ordered = [
             verified_entries[key]
-            for key in sorted(verified_entries.keys(), key=lambda k: int(k.strip("[]")))
+            for key in sorted(
+                remaining_keys & set(verified_entries.keys()),
+                key=lambda k: int(k.strip("[]")),
+            )
         ]
         return False, ExplanationDraft(explanation=sanitized_explanation, citations=ordered)

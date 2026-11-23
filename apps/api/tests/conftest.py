@@ -1,5 +1,6 @@
 """Shared pytest fixtures for VeriMed API tests."""
 
+import os
 import uuid
 from collections.abc import AsyncGenerator
 from datetime import UTC, datetime
@@ -13,7 +14,8 @@ from verimed_api.api.deps import (
     get_ingestion_service,
     get_verification_service,
 )
-from verimed_api.core.config import Settings
+from verimed_api.core.config import Settings, get_settings
+from verimed_api.core.security import redact_private_text
 from verimed_api.main import create_app
 from verimed_api.pipeline.citation_validator import ProgrammaticCitationValidator
 from verimed_api.pipeline.claim_extractor import DeterministicClaimExtractor
@@ -35,6 +37,21 @@ from verimed_api.services.feedback_service import FeedbackService
 from verimed_api.services.health_service import HealthService
 from verimed_api.services.ingestion_service import IngestionService
 from verimed_api.services.verification_service import VerificationService
+
+
+def pytest_configure() -> None:
+    """Force deterministic mock/test settings regardless of local developer .env."""
+    for env_key, env_value in {
+        "APP_ENV": "test",
+        "AI_PROVIDER": "mock",
+        "EMBEDDING_BACKEND": "hash",
+        "RERANKER_BACKEND": "lexical",
+        "RATE_LIMIT_ENABLED": "true",
+        "REQUIRE_CLIENT_AUTH": "false",
+        "ANONYMIZE_PRIVATE_CLAIMS": "true",
+    }.items():
+        os.environ[env_key] = env_value
+    get_settings.cache_clear()
 
 
 class StubHealthRepository:
@@ -63,6 +80,7 @@ class StubVerificationRepository:
 
     def __init__(self) -> None:
         self.saved_requests: list[uuid.UUID] = []
+        self.stored_records: dict[uuid.UUID, dict[str, object]] = {}
 
     async def save_verification_result(
         self,
@@ -73,9 +91,18 @@ class StubVerificationRepository:
         is_demonstration: bool,
         processing_time_ms: int,
         output: PipelineExecutionOutput,
+        assessment_ids: dict[int, uuid.UUID] | None = None,
+        anonymize_private: bool = False,
     ) -> None:
-        del input_text, language_code, is_demonstration, processing_time_ms, output
+        del language_code, is_demonstration, processing_time_ms, assessment_ids
         self.saved_requests.append(request_id)
+        self.stored_records[request_id] = {
+            "input_text": redact_private_text(input_text) if anonymize_private else input_text,
+            "claim_texts": [
+                redact_private_text(c.claim_text) if anonymize_private else c.claim_text
+                for c in output.claims
+            ],
+        }
 
 
 class StubEvidenceRepository:
@@ -160,6 +187,17 @@ class StubFeedbackRepository:
     ) -> bool:
         del assessment_id
         return request_id in self._known_requests
+
+    async def feedback_exists(
+        self,
+        *,
+        request_id: uuid.UUID,
+        assessment_id: uuid.UUID | None,
+    ) -> bool:
+        return any(
+            item["request_id"] == request_id and item["assessment_id"] == assessment_id
+            for item in self.saved_feedback
+        )
 
     async def create_feedback(
         self,
@@ -249,8 +287,12 @@ async def async_client(test_settings: Settings) -> AsyncGenerator[AsyncClient, N
         )
 
     def _override_feedback_service() -> FeedbackService:
-        return FeedbackService(feedback_repo=feedback_repo)  # type: ignore[arg-type]
+        return FeedbackService(
+            feedback_repo=feedback_repo,  # type: ignore[arg-type]
+            settings=test_settings,
+        )
 
+    app.dependency_overrides[get_settings] = lambda: test_settings
     app.dependency_overrides[get_health_service] = _override_health_service
     app.dependency_overrides[get_verification_service] = _override_verification_service
     app.dependency_overrides[get_ingestion_service] = _override_ingestion_service

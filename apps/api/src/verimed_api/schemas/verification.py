@@ -52,6 +52,10 @@ class ClaimVerificationResult(BaseModel):
     model_config = ConfigDict(extra="forbid")
 
     claim_index: int = Field(..., ge=1)
+    assessment_id: str | None = Field(
+        default=None,
+        description="Persisted claim_assessments UUID when stored in PostgreSQL.",
+    )
     claim_text: str
     normalized_query: str
     verdict: VerdictLabel
@@ -81,3 +85,4 @@ class VerificationResponseData(BaseModel):
     processing_time_ms: int = Field(..., ge=0)
     model_version: str
     disclaimer: str
+    feedback_token: str | None = None

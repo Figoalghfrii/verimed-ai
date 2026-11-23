@@ -22,8 +22,16 @@ class HealthCheckData(BaseModel):
 
     status: Literal["healthy", "degraded"]
     service: str
-    version: str
-    environment: str
-    ai_provider: str
+    version: str | None = None
+    environment: str | None = None
+    ai_provider: str | None = None
     database: DatabaseHealthStatus
     disclaimer: str
+
+
+class LivenessData(BaseModel):
+    """Minimal unprivileged payload returned by GET /api/v1/health/live."""
+
+    model_config = ConfigDict(extra="forbid")
+
+    status: Literal["ok"] = "ok"

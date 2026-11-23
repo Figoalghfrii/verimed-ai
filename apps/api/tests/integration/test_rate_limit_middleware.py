@@ -60,6 +60,10 @@ async def test_rate_limit_middleware_enforces_limit_and_exempts_health() -> None
         assert payload["success"] is False
         assert payload["error"]["code"] == "RATE_LIMIT_EXCEEDED"
 
-        # Health endpoint must remain exempt even after limit is reached
+        # DB health endpoint is rate-limited while minimal /health/live stays exempt
         health_res = await client.get("/api/v1/health")
-        assert health_res.status_code == 200
+        assert health_res.status_code == 429
+
+        live_res = await client.get("/api/v1/health/live")
+        assert live_res.status_code == 200
+        assert live_res.json()["data"]["status"] == "ok"

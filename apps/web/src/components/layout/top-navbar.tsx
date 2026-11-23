@@ -141,7 +141,7 @@ export function TopNavbar() {
   const pathname = usePathname();
 
   return (
-    <header className="sticky top-0 z-30 bg-canvas/85 backdrop-blur-md">
+    <header className="sticky top-0 z-30 bg-canvas/85 backdrop-blur-md print:hidden">
       <div className="mx-auto flex max-w-6xl flex-wrap items-center justify-between gap-4 px-4 py-4">
         <Link href="/" className="flex items-center gap-2.5 group">
           <span className="inline-flex h-10 w-10 items-center justify-center rounded-2xl bg-brand-600 text-white shadow-sm transition group-hover:bg-brand-700">

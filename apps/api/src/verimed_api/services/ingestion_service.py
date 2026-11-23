@@ -7,6 +7,7 @@ from datetime import UTC, date, datetime
 
 from sqlalchemy.exc import SQLAlchemyError
 
+from verimed_api.core.logging import log_security_event
 from verimed_api.core.security import is_safe_external_url
 from verimed_api.pipeline.chunker import DocumentChunker, compute_content_hash
 from verimed_api.pipeline.providers.embedding_provider import EmbeddingProviderProtocol
@@ -49,9 +50,22 @@ class IngestionService:
         self._embedding_provider = embedding_provider
         self._chunker = chunker or DocumentChunker()
 
-    async def ingest_document(self, item: IngestionDocumentInput) -> tuple[uuid.UUID, bool]:
+    async def ingest_document(
+        self,
+        item: IngestionDocumentInput,
+        *,
+        force_reembed: bool = False,
+    ) -> tuple[uuid.UUID, bool]:
         """Validate source provenance, chunk text, generate embeddings, and upsert into DB."""
-        if not item.is_synthetic_demo and not is_safe_external_url(item.source_url):
+        if not is_safe_external_url(item.source_url, resolve_dns=False):
+            log_security_event(
+                "ssrf_url_rejected",
+                outcome="blocked",
+                details={
+                    "source_type": item.source_type,
+                    "is_synthetic_demo": item.is_synthetic_demo,
+                },
+            )
             raise ValueError(
                 f"Unsafe or non-HTTPS source URL rejected by SSRF guard: {item.source_url}"
             )
@@ -85,6 +99,8 @@ class IngestionService:
             is_synthetic_demo=item.is_synthetic_demo,
             chunks=chunk_records,
         )
+        if force_reembed:
+            return await self._evidence_repo.upsert_document_with_chunks(record, force_reembed=True)
         return await self._evidence_repo.upsert_document_with_chunks(record)
 
     async def get_stats(self) -> EvidenceCorpusStats:

@@ -26,6 +26,7 @@ async def test_verify_supported_claim_returns_grounded_demo_result(
     assert "bukan alat diagnosis medis" in data["disclaimer"]
 
     claim = data["claims"][0]
+    assert claim["assessment_id"] is not None
     assert claim["verdict"] == "SUPPORTED"
     assert claim["verdict_label_id"] == "Didukung Bukti"
     assert claim["abstained"] is False

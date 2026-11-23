@@ -12,6 +12,32 @@ export class ApiClientError extends Error {
   }
 }
 
+let cachedClientToken: string | null = null;
+
+async function acquireAnonymousClientToken(baseUrl: string): Promise<string | null> {
+  try {
+    const tokenRes = await fetch(`${baseUrl}/client-token`, {
+      method: "POST",
+      headers: {
+        Accept: "application/json",
+        "Content-Type": "application/json",
+      },
+    });
+    if (!tokenRes.ok) {
+      return null;
+    }
+    const tokenPayload = await tokenRes.json().catch(() => null);
+    const token = tokenPayload?.data?.client_token;
+    if (typeof token === "string" && token.length > 0) {
+      cachedClientToken = token;
+      return token;
+    }
+    return null;
+  } catch {
+    return null;
+  }
+}
+
 export async function apiFetch<T>(
   endpoint: string,
   options?: RequestInit
@@ -21,14 +47,29 @@ export async function apiFetch<T>(
     : `/${endpoint}`;
   const url = `${publicEnv.NEXT_PUBLIC_API_BASE_URL}${normalizedEndpoint}`;
 
-  const response = await fetch(url, {
-    ...options,
-    headers: {
-      Accept: "application/json",
-      "Content-Type": "application/json",
-      ...(options?.headers ?? {}),
-    },
-  });
+  const execute = async (tokenOverride?: string | null) => {
+    const tokenToSend = tokenOverride ?? cachedClientToken;
+    return fetch(url, {
+      ...options,
+      headers: {
+        Accept: "application/json",
+        "Content-Type": "application/json",
+        ...(tokenToSend ? { "X-VeriMed-Client-Token": tokenToSend } : {}),
+        ...(options?.headers ?? {}),
+      },
+    });
+  };
+
+  let response = await execute();
+  if (response.status === 401 && normalizedEndpoint !== "/client-token") {
+    cachedClientToken = null;
+    const freshToken = await acquireAnonymousClientToken(
+      publicEnv.NEXT_PUBLIC_API_BASE_URL
+    );
+    if (freshToken) {
+      response = await execute(freshToken);
+    }
+  }
 
   const payload = await response.json().catch(() => null);
 

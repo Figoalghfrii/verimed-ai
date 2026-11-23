@@ -133,6 +133,9 @@ describe("VerificationResultView", () => {
     expect(
       screen.getByText("[Contoh Simulasi] Efektivitas Cuci Tangan")
     ).toBeInTheDocument();
+    expect(
+      screen.getByRole("button", { name: "Cetak / Simpan PDF" })
+    ).toBeInTheDocument();
     expect(screen.getByText(/bukan alat diagnosis medis/i)).toBeInTheDocument();
     expect(
       screen.getByText(/Apakah penjelasan verifikasi ini mudah dipahami/i)
@@ -316,5 +319,22 @@ describe("WhatsApp summary & local verification history", () => {
 
     clearVerificationHistory();
     expect(loadVerificationHistory()).toEqual([]);
+  });
+
+  it("renders clickable external link for verified curated sources and prints report", () => {
+    const printSpy = vi.spyOn(window, "print").mockImplementation(() => {});
+    renderWithQueryClient(<VerificationResultView result={sampleResult} />);
+
+    const externalLink = screen.getByRole("link", {
+      name: "https://kemkes.go.id/id/ctps",
+    });
+    expect(externalLink).toHaveAttribute("target", "_blank");
+    expect(externalLink).toHaveAttribute("rel", "noopener noreferrer nofollow");
+
+    fireEvent.click(
+      screen.getByRole("button", { name: "Cetak / Simpan PDF" })
+    );
+    expect(printSpy).toHaveBeenCalledTimes(1);
+    printSpy.mockRestore();
   });
 });

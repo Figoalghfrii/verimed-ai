@@ -1,9 +1,13 @@
 "use client";
 
+import Link from "next/link";
 import React, { useState } from "react";
 import { Badge } from "@/components/ui/badge";
 import { Card } from "@/components/ui/card";
+import { getSafeExternalUrl } from "@/lib/safe-url";
 import { useEvidenceDocuments } from "../api/use-evidence-documents";
+
+const PAGE_SIZE = 10;
 
 const SOURCE_TYPE_FILTERS: Array<{ value: string; label: string }> = [
   { value: "", label: "Semua Jenis Sumber" },
@@ -19,19 +23,21 @@ export function CorpusExplorer() {
   const [appliedSearch, setAppliedSearch] = useState("");
   const [sourceType, setSourceType] = useState("");
   const [includeSynthetic, setIncludeSynthetic] = useState(true);
+  const [offset, setOffset] = useState(0);
 
   const { data, isLoading, isError, error } = useEvidenceDocuments({
     q: appliedSearch,
     sourceType: sourceType || undefined,
     includeSynthetic,
-    limit: 20,
-    offset: 0,
+    limit: PAGE_SIZE,
+    offset,
   });
 
   const payload = data?.data;
 
   const handleSearchSubmit = (event: React.FormEvent<HTMLFormElement>) => {
     event.preventDefault();
+    setOffset(0);
     setAppliedSearch(searchInput.trim());
   };
 
@@ -70,6 +76,7 @@ export function CorpusExplorer() {
             <button
               type="button"
               onClick={() => {
+                setOffset(0);
                 setSearchInput("");
                 setAppliedSearch("");
               }}
@@ -89,7 +96,10 @@ export function CorpusExplorer() {
                   key={filter.label}
                   type="button"
                   aria-pressed={active}
-                  onClick={() => setSourceType(filter.value)}
+                  onClick={() => {
+                    setOffset(0);
+                    setSourceType(filter.value);
+                  }}
                   className={`rounded-full border px-3.5 py-1.5 text-xs font-semibold transition ${
                     active
                       ? "border-brand-600 bg-brand-600 text-white"
@@ -106,7 +116,10 @@ export function CorpusExplorer() {
             <input
               type="checkbox"
               checked={includeSynthetic}
-              onChange={(e) => setIncludeSynthetic(e.target.checked)}
+              onChange={(e) => {
+                setOffset(0);
+                setIncludeSynthetic(e.target.checked);
+              }}
               className="h-4 w-4 rounded border-slate-300 text-brand-600 focus:ring-brand-500"
             />
             <span>Tampilkan juga dokumen simulasi demo</span>
@@ -174,46 +187,91 @@ export function CorpusExplorer() {
           </p>
 
           <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
-            {payload.items.map((doc) => (
-              <Card key={doc.id} as="article" className="flex flex-col justify-between space-y-4">
-                <div className="space-y-2.5">
-                  <div className="flex flex-wrap items-center justify-between gap-2">
-                    <span className="text-xs font-semibold text-brand-700">
-                      {doc.source_name}
-                    </span>
-                    <Badge variant={doc.is_synthetic_demo ? "warning" : "success"}>
-                      {doc.is_synthetic_demo ? "Simulasi Demo" : "Terkurasi"}
-                    </Badge>
+            {payload.items.map((doc) => {
+              const safeUrl = getSafeExternalUrl(doc.source_url);
+              return (
+                <Card key={doc.id} as="article" className="flex flex-col justify-between space-y-4">
+                  <div className="space-y-2.5">
+                    <div className="flex flex-wrap items-center justify-between gap-2">
+                      <span className="text-xs font-semibold text-brand-700">
+                        {doc.source_name}
+                      </span>
+                      <Badge variant={doc.is_synthetic_demo ? "warning" : "success"}>
+                        {doc.is_synthetic_demo ? "Simulasi Demo" : "Terkurasi"}
+                      </Badge>
+                    </div>
+
+                    <h3 className="text-base font-bold leading-snug text-slate-900">
+                      {doc.title}
+                    </h3>
+
+                    {doc.authors && (
+                      <p className="text-xs text-slate-600">
+                        Penerbit / Penulis: {doc.authors}
+                      </p>
+                    )}
                   </div>
 
-                  <h3 className="text-base font-bold leading-snug text-slate-900">
-                    {doc.title}
-                  </h3>
-
-                  {doc.authors && (
-                    <p className="text-xs text-slate-600">
-                      Penerbit / Penulis: {doc.authors}
-                    </p>
-                  )}
-                </div>
-
-                <div className="flex flex-wrap items-center justify-between gap-2 border-t border-slate-100 pt-3 text-xs text-slate-500">
-                  <span>
-                    {doc.chunks_count} potongan •{" "}
-                    <code className="font-mono">{doc.source_type}</code>
-                  </span>
-                  <a
-                    href={doc.source_url}
-                    target="_blank"
-                    rel="noopener noreferrer"
-                    className="font-semibold text-brand-600 hover:text-brand-700 hover:underline"
-                  >
-                    Buka Rujukan Asli &rarr;
-                  </a>
-                </div>
-              </Card>
-            ))}
+                  <div className="flex flex-wrap items-center justify-between gap-2 border-t border-slate-100 pt-3 text-xs text-slate-500">
+                    <span>
+                      {doc.chunks_count} potongan •{" "}
+                      <code className="font-mono">{doc.source_type}</code>
+                    </span>
+                    <div className="flex flex-wrap items-center gap-3">
+                      <Link
+                        href={`/verify?claim=${encodeURIComponent(doc.title)}`}
+                        className="font-semibold text-slate-700 hover:text-brand-600 hover:underline"
+                      >
+                        Uji Klaim Terkait
+                      </Link>
+                      {safeUrl ? (
+                        <a
+                          href={safeUrl}
+                          target="_blank"
+                          rel="noopener noreferrer nofollow"
+                          className="font-semibold text-brand-600 hover:text-brand-700 hover:underline"
+                        >
+                          Buka Rujukan Asli &rarr;
+                        </a>
+                      ) : (
+                        <span className="text-slate-400">Tautan tidak tersedia</span>
+                      )}
+                    </div>
+                  </div>
+                </Card>
+              );
+            })}
           </div>
+
+          {payload.total > PAGE_SIZE && (
+            <nav
+              aria-label="Paginasi Dokumen Korpus"
+              className="flex flex-wrap items-center justify-between gap-3 rounded-2xl border border-slate-200/70 bg-white px-4 py-3 text-xs shadow-sm"
+            >
+              <span className="font-medium text-slate-600">
+                Halaman {Math.floor(offset / PAGE_SIZE) + 1} dari{" "}
+                {Math.max(1, Math.ceil(payload.total / PAGE_SIZE))}
+              </span>
+              <div className="flex items-center gap-2">
+                <button
+                  type="button"
+                  disabled={offset === 0}
+                  onClick={() => setOffset((prev) => Math.max(0, prev - PAGE_SIZE))}
+                  className="rounded-full border border-slate-200 bg-white px-4 py-1.5 font-semibold text-slate-700 transition hover:bg-slate-50 disabled:cursor-not-allowed disabled:opacity-45"
+                >
+                  Halaman Sebelumnya
+                </button>
+                <button
+                  type="button"
+                  disabled={offset + payload.items.length >= payload.total}
+                  onClick={() => setOffset((prev) => prev + PAGE_SIZE)}
+                  className="rounded-full border border-slate-200 bg-white px-4 py-1.5 font-semibold text-slate-700 transition hover:bg-slate-50 disabled:cursor-not-allowed disabled:opacity-45"
+                >
+                  Halaman Selanjutnya
+                </button>
+              </div>
+            </nav>
+          )}
         </section>
       )}
     </div>

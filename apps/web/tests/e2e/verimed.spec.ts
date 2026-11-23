@@ -119,6 +119,7 @@ test.describe("VeriMed End-to-End Flows", () => {
             model_version: "mock-0.1.0",
             disclaimer:
               "VeriMed adalah platform edukasi verifikasi klaim kesehatan, bukan alat diagnosis medis.",
+            feedback_token: "test-feedback-token",
           },
           meta: META,
         }),
@@ -308,5 +309,85 @@ test.describe("VeriMed End-to-End Flows", () => {
       )
     ).toBeVisible();
     await expect(page.getByText("Terkurasi", { exact: true })).toBeVisible();
+    await expect(
+      page.getByRole("link", { name: "Uji Klaim Terkait" })
+    ).toHaveAttribute(
+      "href",
+      /\/verify\?claim=Cuci%20Tangan%20Pakai%20Sabun/
+    );
+  });
+
+  test("verify page supports ?claim query pre-fill and renders custom 404 recovery page", async ({
+    page,
+  }) => {
+    await page.goto(
+      "/verify?claim=Pemberian%20ASI%20eksklusif%20mencegah%20stunting."
+    );
+    await expect(page.getByLabel("Teks Klaim Kesehatan")).toHaveValue(
+      "Pemberian ASI eksklusif mencegah stunting."
+    );
+
+    await page.goto("/halaman-tidak-ditemukan-404");
+    await expect(
+      page.getByRole("heading", {
+        name: /Halaman yang Anda cari tidak tersedia/i,
+      })
+    ).toBeVisible();
+  });
+
+  test("security headers (CSP/XFO/nosniff) are present and unsafe javascript: URLs are inert", async ({
+    page,
+  }) => {
+    const pageErrors: string[] = [];
+    page.on("pageerror", (err) => pageErrors.push(err.message));
+
+    const response = await page.goto("/");
+    expect(response).not.toBeNull();
+    const headers = response!.headers();
+    expect(headers["x-frame-options"]).toBe("DENY");
+    expect(headers["x-content-type-options"]).toBe("nosniff");
+    expect(headers["referrer-policy"]).toBe("no-referrer");
+    expect(headers["content-security-policy"]).toContain("frame-ancestors 'none'");
+    expect(headers["content-security-policy"]).toContain("nonce-");
+
+    await page.route("**/api/v1/evidence/documents*", async (route) => {
+      await route.fulfill({
+        status: 200,
+        contentType: "application/json",
+        body: JSON.stringify({
+          success: true,
+          data: {
+            items: [
+              {
+                id: "cccccccc-cccc-cccc-cccc-cccccccccccc",
+                source_name: "Injected Test",
+                source_url: "javascript:alert(1)",
+                title: "XSS Safety Check Entry",
+                authors: null,
+                publication_date: null,
+                language_code: "id",
+                source_type: "OFFICIAL_GUIDELINE",
+                chunks_count: 1,
+                is_synthetic_demo: false,
+                retrieved_at: "2026-11-22T05:00:00Z",
+              },
+            ],
+            total: 1,
+            limit: 20,
+            offset: 0,
+            database_connected: true,
+          },
+          meta: { ...META, is_demonstration: false },
+        }),
+      });
+    });
+
+    await page.goto("/corpus");
+    await expect(page.getByText("XSS Safety Check Entry")).toBeVisible();
+    await expect(
+      page.getByRole("link", { name: /Buka Rujukan Asli/i })
+    ).toHaveCount(0);
+    await expect(page.getByText("Tautan tidak tersedia")).toBeVisible();
+    expect(pageErrors).toEqual([]);
   });
 });

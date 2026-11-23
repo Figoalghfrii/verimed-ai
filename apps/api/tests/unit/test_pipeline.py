@@ -133,6 +133,9 @@ async def test_verification_repository_stages_retrieval_audit_rows() -> None:
         def add(self, row: object) -> None:
             added_rows.append(row)
 
+        async def flush(self) -> None:
+            return None
+
         async def commit(self) -> None:
             return None
 

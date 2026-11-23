@@ -17,7 +17,12 @@ if config.config_file_name is not None:
     fileConfig(config.config_file_name)
 
 settings = get_settings()
-config.set_main_option("sqlalchemy.url", settings.database_url)
+migration_url = settings.database_url or settings.database_sync_url
+if not migration_url:
+    raise RuntimeError(
+        "DATABASE_URL or DATABASE_SYNC_URL must be configured before running Alembic migrations."
+    )
+config.set_main_option("sqlalchemy.url", migration_url)
 
 target_metadata = Base.metadata
 

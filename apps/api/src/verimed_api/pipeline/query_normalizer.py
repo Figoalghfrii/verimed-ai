@@ -32,6 +32,7 @@ INDONESIAN_MEDICAL_SYNONYMS: dict[str, str] = {
     "hipertensi": "hipertensi tekanan darah garam natrium stroke jantung",
     "angin duduk": "angina pektoris sindrom koroner akut nyeri dada",
     "handwashing": "cuci tangan pakai sabun ctps higiene sanitasi infeksi diare",
+    "washing hands": "cuci tangan pakai sabun ctps higiene sanitasi infeksi diare",
     "wash hands": "cuci tangan pakai sabun ctps pencegahan infeksi diare",
     "soap": "sabun cuci tangan pakai sabun ctps pencegahan infeksi",
     "antibiotic": "antibiotik resistensi antimikroba amr infeksi bakteri virus",
@@ -44,6 +45,20 @@ INDONESIAN_MEDICAL_SYNONYMS: dict[str, str] = {
     "sugar": "gula gula darah glukosa ggl diabetes melitus",
     "salt": "garam natrium sodium hipertensi tekanan darah ggl",
     "hypertension": "hipertensi darah tinggi tekanan darah garam natrium",
+    "vitamin": "vitamin c asam askorbat suplemen common cold pilek",
+    "common cold": "pilek biasa common cold flu vitamin c",
+    "cold": "pilek common cold flu virus",
+    "diarrhea": "diare infeksi saluran pencernaan ctps cuci tangan sanitasi",
+    "dbd": "demam berdarah dengue nyamuk aedes aegypti 3m plus cairan",
+    "demam berdarah": "dengue severe dengue dbd nyamuk aedes aegypti 3m plus",
+    "dengue": "demam berdarah dengue severe dengue nyamuk 3m plus",
+    "asi": "asi eksklusif air susu ibu menyusui bayi 6 bulan stunting",
+    "stunting": "stunting malnutrisi kurang gizi asi eksklusif anak balita",
+    "breastfeeding": "asi eksklusif menyusui infant feeding stunting 6 months",
+    "polio": "poliomyelitis polio vaksinasi imunisasi virus kelumpuhan",
+    "hpv": "human papillomavirus hpv vaksinasi kanker serviks leher rahim",
+    "kanker serviks": "hpv human papillomavirus vaksinasi kanker serviks",
+    "cervical cancer": "hpv human papillomavirus vaksinasi kanker serviks",
 }
 
 PUNCTUATION_RE = re.compile(r"[^\w\s-]", re.UNICODE)

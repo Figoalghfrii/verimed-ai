@@ -10,8 +10,15 @@ export const FeedbackCategoryEnum = z.enum([
 
 export type FeedbackCategory = z.infer<typeof FeedbackCategoryEnum>;
 
+const UUID_PATTERN = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
+
 export const FeedbackInputSchema = z.object({
-  request_id: z.string().uuid(),
+  request_id: z.string().regex(UUID_PATTERN, "ID permintaan tidak valid."),
+  assessment_id: z
+    .string()
+    .regex(UUID_PATTERN, "ID penilaian tidak valid.")
+    .nullable()
+    .optional(),
   is_helpful: z.boolean(),
   feedback_category: FeedbackCategoryEnum.nullable().optional(),
   comment: z
@@ -20,6 +27,7 @@ export const FeedbackInputSchema = z.object({
     .max(500, "Komentar masukan maksimal 500 karakter.")
     .nullable()
     .optional(),
+  feedback_token: z.string().max(1024).nullable().optional(),
 });
 
 export type FeedbackInput = z.infer<typeof FeedbackInputSchema>;

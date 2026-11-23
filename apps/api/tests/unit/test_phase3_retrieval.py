@@ -265,3 +265,163 @@ def test_build_safe_or_query_strips_special_operators() -> None:
     assert (
         build_safe_or_query("cuci tangan | sabun: !@# diare") == "cuci OR tangan OR sabun OR diare"
     )
+
+
+async def test_configurable_llm_provider_supports_gemini_fences_and_untrusted_claim() -> None:
+    def _mock_gemini_handler(request: httpx.Request) -> httpx.Response:
+        assert (
+            str(request.url)
+            == "https://generativelanguage.googleapis.com/v1beta/openai/chat/completions"
+        )
+        body = json.loads(request.content.decode("utf-8"))
+        user_msg = body["messages"][1]["content"]
+        assert "<untrusted_claim>" in user_msg
+        assert "</untrusted_claim>" in user_msg
+        fenced_json = (
+            "```json\n"
+            + json.dumps(
+                {
+                    "verdict": "MIXED_EVIDENCE",
+                    "confidence_score": 0.78,
+                    "abstained": False,
+                    "abstention_reason": None,
+                    "explanation": "According to primary review [1], results vary by subgroup.",
+                    "uncertainty_notes": None,
+                }
+            )
+            + "\n```"
+        )
+        return httpx.Response(200, json={"choices": [{"message": {"content": fenced_json}}]})
+
+    provider = ConfigurableLLMAssessorExplainer(
+        safety_guard=SafetyGuard(),
+        base_url="https://generativelanguage.googleapis.com/v1beta/openai/chat/completions/",
+        api_key="test-gemini-key",
+        model_name="gemini-2.5-flash",
+        transport=httpx.MockTransport(_mock_gemini_handler),
+    )
+
+    c1 = RetrievedChunkCandidate(
+        chunk_id="c-1",
+        source_name="NIH ODS",
+        source_type="OFFICIAL_GUIDELINE",
+        title="Vitamin C",
+        source_url="https://ods.od.nih.gov/factsheets/VitaminC-Consumer/",
+        publication_date=None,
+        chunk_text="Mixed findings on vitamin C for common cold.",
+        lexical_score=0.9,
+        vector_score=0.9,
+        hybrid_score=0.9,
+        rerank_score=0.9,
+        stance="CONTEXTUAL",
+        is_synthetic_demo=False,
+    )
+    c2 = RetrievedChunkCandidate(
+        chunk_id="c-2",
+        source_name="Other",
+        source_type="OFFICIAL_GUIDELINE",
+        title="Other context",
+        source_url="https://www.who.int/other",
+        publication_date=None,
+        chunk_text="Additional background text.",
+        lexical_score=0.5,
+        vector_score=0.5,
+        hybrid_score=0.5,
+        rerank_score=0.5,
+        stance="CONTEXTUAL",
+        is_synthetic_demo=False,
+    )
+
+    assessment = await provider.assess("Vitamin C prevents colds", [c1, c2], language="en")
+    assert assessment.verdict == "MIXED_EVIDENCE"
+    assert len(assessment.uncertainty_notes) >= 5
+    draft = await provider.explain("Vitamin C prevents colds", assessment, [c1, c2], language="en")
+    assert [c.citation_key for c in draft.citations] == ["[1]"]
+
+
+async def test_hybrid_grounded_bilingual_and_negated_claim_alignment() -> None:
+    reranker = LexicalOverlapReranker()
+    ctps_chunk = RetrievedChunkCandidate(
+        chunk_id="c-ctps",
+        source_name="Kementerian Kesehatan RI",
+        source_type="OFFICIAL_GUIDELINE",
+        title="Cuci Tangan Pakai Sabun",
+        source_url="https://kemkes.go.id/id/ctps",
+        publication_date=None,
+        chunk_text=(
+            "Cuci tangan pakai sabun terbukti efektif mencegah penularan diare dan infeksi."
+        ),
+        lexical_score=0.85,
+        vector_score=0.82,
+        hybrid_score=0.85,
+        rerank_score=0.85,
+        stance="CONTEXTUAL",
+        is_synthetic_demo=False,
+    )
+    ranked_en = await reranker.rerank(
+        "Washing hands with soap prevents diarrhea",
+        [ctps_chunk],
+        min_score=0.35,
+    )
+    assert len(ranked_en) == 1
+    assert ranked_en[0].rerank_score >= 0.35
+
+    assessor = HybridGroundedAssessor(min_confidence_threshold=0.35)
+    abx_chunk = RetrievedChunkCandidate(
+        chunk_id="c-abx",
+        source_name="WHO",
+        source_type="WHO_FACT_SHEET",
+        title="AMR",
+        source_url="https://www.who.int/news-room/fact-sheets/detail/antimicrobial-resistance",
+        publication_date=None,
+        chunk_text="Antibiotik tidak efektif untuk mengobati flu virus biasa.",
+        lexical_score=0.9,
+        vector_score=0.9,
+        hybrid_score=0.9,
+        rerank_score=0.9,
+        stance="CONTEXTUAL",
+        is_synthetic_demo=False,
+    )
+
+    # Negated accurate claim agrees with refuting WHO evidence -> SUPPORTED
+    negated_ok = await assessor.assess(
+        "Antibiotik tidak dapat menyembuhkan flu karena virus.",
+        [abx_chunk],
+    )
+    assert negated_ok.verdict == "SUPPORTED"
+
+    # Negated false claim contradicting supportive evidence -> CONTRADICTED
+    negated_false = await assessor.assess(
+        "Cuci tangan pakai sabun tidak mencegah diare.",
+        ranked_en,
+    )
+    assert negated_false.verdict == "CONTRADICTED"
+
+
+async def test_ingestion_service_forwards_force_reembed_flag() -> None:
+    calls: list[bool] = []
+
+    class _RecordingRepo:
+        async def upsert_document_with_chunks(
+            self, record: object, *, force_reembed: bool = False
+        ) -> tuple[object, bool]:
+            del record
+            calls.append(force_reembed)
+            return "doc-id", False
+
+    service = IngestionService(
+        evidence_repo=_RecordingRepo(),  # type: ignore[arg-type]
+        embedding_provider=DeterministicHashEmbeddingProvider(),
+    )
+    await service.ingest_document(
+        IngestionDocumentInput(
+            source_name="WHO",
+            source_url="https://www.who.int/news-room/fact-sheets/detail/measles",
+            title="Measles Fact Sheet",
+            body_text="Vaksin campak aman dan efektif melindungi anak.",
+            source_type="WHO_FACT_SHEET",
+            is_synthetic_demo=False,
+        ),
+        force_reembed=True,
+    )
+    assert calls == [True]

@@ -1,13 +1,17 @@
 """FastAPI dependency injection providers."""
 
+import hmac
 from functools import lru_cache
 from typing import Annotated
 
-from fastapi import Depends
+from fastapi import Depends, Request
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from verimed_api.core.config import Settings, get_settings
 from verimed_api.core.database import get_db_session
+from verimed_api.core.exceptions import AppError
+from verimed_api.core.logging import log_security_event
+from verimed_api.core.security import verify_signed_token
 from verimed_api.pipeline.citation_validator import ProgrammaticCitationValidator
 from verimed_api.pipeline.claim_extractor import DeterministicClaimExtractor
 from verimed_api.pipeline.interfaces import (
@@ -94,10 +98,53 @@ def get_ingestion_service(
     )
 
 
-def get_feedback_service(session: DbSessionDep) -> FeedbackService:
+def verify_client_credential(
+    request: Request,
+    settings: SettingsDep,
+) -> None:
+    """Enforce API key or signed anonymous client token when client auth is required."""
+    if not settings.should_require_client_auth:
+        return
+
+    api_key = request.headers.get("x-api-key")
+    if api_key and settings.client_api_keys:
+        if any(
+            hmac.compare_digest(api_key, configured_key)
+            for configured_key in settings.client_api_keys
+            if configured_key
+        ):
+            return
+
+    client_token = request.headers.get("x-verimed-client-token")
+    if client_token:
+        claims = verify_signed_token(
+            client_token,
+            secret=settings.effective_client_auth_secret,
+        )
+        if claims and claims.get("scope") == "public_client":
+            return
+
+    log_security_event(
+        "client_auth_rejected",
+        request_id=getattr(request.state, "request_id", None),
+        client_ip=request.client.host if request.client else None,
+        outcome="blocked",
+        details={"path": request.url.path},
+    )
+    raise AppError(
+        code="CLIENT_AUTH_REQUIRED",
+        message="Kredensial klien diperlukan untuk mengakses layanan ini.",
+        status_code=401,
+    )
+
+
+def get_feedback_service(
+    session: DbSessionDep,
+    settings: SettingsDep,
+) -> FeedbackService:
     """Provide configured FeedbackService instance."""
     repo = FeedbackRepository(session=session)
-    return FeedbackService(feedback_repo=repo)
+    return FeedbackService(feedback_repo=repo, settings=settings)
 
 
 def get_verification_service(
@@ -142,6 +189,10 @@ def get_verification_service(
             assessor = HybridGroundedAssessor(min_confidence_threshold=settings.retrieval_min_score)
             explainer = HybridGroundedExplainer(safety_guard=safety_guard)
 
+    model_version = f"{settings.ai_provider}-{settings.app_version}"
+    if settings.ai_provider == "configurable" and settings.llm_base_url and settings.llm_api_key:
+        model_version = f"configurable:{settings.llm_model_name}-{settings.app_version}"[:64]
+
     orchestrator = VerificationPipelineOrchestrator(
         safety_guard=safety_guard,
         claim_extractor=DeterministicClaimExtractor(),
@@ -151,7 +202,7 @@ def get_verification_service(
         assessor=assessor,
         explainer=explainer,
         citation_validator=ProgrammaticCitationValidator(),
-        model_version=f"{settings.ai_provider}-{settings.app_version}",
+        model_version=model_version,
         min_rerank_score=settings.retrieval_min_score,
     )
     repo = VerificationRepository(session=session)

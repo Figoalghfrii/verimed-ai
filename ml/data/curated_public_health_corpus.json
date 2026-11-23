@@ -75,5 +75,60 @@
     "source_type": "BPOM_ADVISORY",
     "is_synthetic_demo": false,
     "body_text": "BPOM RI secara berkala menindak produk obat bahan alam atau jamu ilegal yang dicampur secara gelap dengan Bahan Kimia Obat (BKO) seperti parasetamol, deksametason, fenilbutazon, maupun sildenafil untuk memberikan efek instan. BPOM memperingatkan bahwa konsumsi produk herbal mengandung BKO tanpa resep dan pengawasan dokter sangat berbahaya karena tidak terbukti aman dan dapat menyebabkan kerusakan ginjal, gangguan hati, gagal jantung, hingga pendarahan lambung."
+  },
+  {
+    "source_name": "NIH Office of Dietary Supplements (ODS)",
+    "source_url": "https://ods.od.nih.gov/factsheets/VitaminC-Consumer/",
+    "title": "Vitamin C Fact Sheet for Consumers — Suplementasi Vitamin C dan Pilek Biasa",
+    "authors": "National Institutes of Health Office of Dietary Supplements",
+    "publication_date": null,
+    "language_code": "id",
+    "source_type": "OFFICIAL_GUIDELINE",
+    "is_synthetic_demo": false,
+    "body_text": "Berdasarkan ringkasan ilmiah NIH Office of Dietary Supplements (ODS), bukti mengenai suplemen vitamin C untuk pilek biasa bersifat beragam dan bergantung pada kelompok populasi. Penggunaan suplemen vitamin C rutin tidak menurunkan risiko terkena pilek pada populasi umum, dan konsumsi setelah gejala muncul belum menunjukkan manfaat konsisten. Namun, konsumsi harian secara teratur dapat sedikit mempersingkat durasi pilek (sekitar 8% pada orang dewasa dan 14% pada anak-anak) serta membantu meringankan tingkat keparahan gejala."
+  },
+  {
+    "source_name": "World Health Organization (WHO)",
+    "source_url": "https://www.who.int/news-room/fact-sheets/detail/dengue-and-severe-dengue",
+    "title": "Dengue and severe dengue — WHO Fact Sheet",
+    "authors": "World Health Organization",
+    "publication_date": null,
+    "language_code": "id",
+    "source_type": "WHO_FACT_SHEET",
+    "is_synthetic_demo": false,
+    "body_text": "WHO menyatakan bahwa demam berdarah dengue (DBD) adalah penyakit infeksi virus yang ditularkan melalui gigitan nyamuk Aedes aegypti dan belum memiliki obat antivirus khusus penyembuh virus. Penanganan kasus dengue berfokus pada pemantauan medis serta manajemen nyeri dan kebutuhan cairan, sedangkan dengue berat memerlukan perawatan darurat segera di rumah sakit. Pencegahan paling efektif adalah mengendalikan vektor nyamuk melalui pemberantasan sarang nyamuk seperti menguras dan menutup penampungan air (3M Plus) serta menghindari gigitan nyamuk."
+  },
+  {
+    "source_name": "World Health Organization (WHO)",
+    "source_url": "https://www.who.int/news-room/fact-sheets/detail/infant-and-young-child-feeding",
+    "title": "Infant and young child feeding — WHO Fact Sheet",
+    "authors": "World Health Organization",
+    "publication_date": null,
+    "language_code": "id",
+    "source_type": "WHO_FACT_SHEET",
+    "is_synthetic_demo": false,
+    "body_text": "WHO dan UNICEF menganjurkan pemberian ASI eksklusif selama 6 bulan pertama kehidupan bayi tanpa makanan atau minuman tambahan lain, termasuk air putih, untuk mendukung pertumbuhan dan kekebalan awal bayi. Mulai usia 6 bulan, bayi perlu diberikan makanan pendamping ASI (MPASI) yang aman dan bergizi sambil tetap melanjutkan pemberian ASI hingga usia 2 tahun atau lebih guna mencegah kurang gizi kronis seperti stunting dan menurunkan risiko kesakitan anak."
+  },
+  {
+    "source_name": "World Health Organization (WHO)",
+    "source_url": "https://www.who.int/news-room/fact-sheets/detail/poliomyelitis",
+    "title": "Poliomyelitis (Polio) — WHO Fact Sheet",
+    "authors": "World Health Organization",
+    "publication_date": null,
+    "language_code": "id",
+    "source_type": "WHO_FACT_SHEET",
+    "is_synthetic_demo": false,
+    "body_text": "WHO menjelaskan bahwa poliomielitis (polio) adalah penyakit menular akibat virus yang terutama menyerang anak di bawah usia 5 tahun dan dapat menyerang sistem saraf hingga menimbulkan kelumpuhan permanen. Penyakit ini belum memiliki obat penyembuh khusus setelah terjadi kelumpuhan, sehingga imunisasi vaksin polio yang aman dan efektif direkomendasikan secara rutin untuk melindungi anak dan mencegah penularan wabah."
+  },
+  {
+    "source_name": "World Health Organization (WHO)",
+    "source_url": "https://www.who.int/health-topics/human-papillomavirus-hpv",
+    "title": "Human papillomavirus (HPV) Immunization — WHO Health Topic",
+    "authors": "World Health Organization",
+    "publication_date": null,
+    "language_code": "id",
+    "source_type": "WHO_GUIDANCE",
+    "is_synthetic_demo": false,
+    "body_text": "WHO menyatakan bahwa imunisasi vaksin HPV direkomendasikan pada kelompok sasaran utama seperti anak perempuan usia 9 hingga 14 tahun karena aman dan efektif mencegah infeksi Human papillomavirus penyebab sebagian besar kasus kanker serviks (leher rahim) dan beberapa jenis kanker terkait lainnya."
   }
 ]
