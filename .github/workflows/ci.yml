@@ -37,6 +37,56 @@ jobs:
           python ml/evaluation/run_evaluation.py
           python ml/evaluation/run_evaluation.py --corpus ml/data/curated_public_health_corpus.json --benchmark ml/data/curated_benchmark_claims.json
 
+      - name: Validate Docker Compose configuration
+        env:
+          POSTGRES_PASSWORD: ci-temp-postgres-password
+          POSTGRES_APP_PASSWORD: ci-temp-app-password
+        run: docker compose config -q
+
+  postgres-integration:
+    name: PostgreSQL + pgvector Integration
+    runs-on: ubuntu-latest
+    services:
+      postgres:
+        image: pgvector/pgvector:pg16
+        env:
+          POSTGRES_USER: verimed
+          POSTGRES_PASSWORD: verimed_dev_password
+          POSTGRES_DB: verimed_db
+        ports:
+          - 5432:5432
+        options: >-
+          --health-cmd "pg_isready -U verimed -d verimed_db"
+          --health-interval 5s
+          --health-timeout 5s
+          --health-retries 10
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Set up Python 3.12
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+
+      - name: Install backend dependencies
+        run: pip install -e "./apps/api[dev]"
+
+      - name: Run Alembic migrations & seed corpora
+        env:
+          DATABASE_URL: postgresql+asyncpg://verimed:verimed_dev_password@localhost:5432/verimed_db
+          DATABASE_SYNC_URL: postgresql+psycopg://verimed:verimed_dev_password@localhost:5432/verimed_db
+        run: |
+          cd apps/api && alembic upgrade head && cd ../..
+          python scripts/seed_demo_data.py --preset curated
+          python scripts/seed_demo_data.py --preset synthetic --force-reembed
+
+      - name: Run PostgreSQL pgvector integration tests
+        env:
+          VERIMED_TEST_DATABASE_URL: postgresql+asyncpg://verimed:verimed_dev_password@localhost:5432/verimed_db
+          DATABASE_URL: postgresql+asyncpg://verimed:verimed_dev_password@localhost:5432/verimed_db
+          DATABASE_SYNC_URL: postgresql+psycopg://verimed:verimed_dev_password@localhost:5432/verimed_db
+        run: python -m pytest apps/api/tests/integration/test_postgres_pgvector_integration.py -v
+
   frontend:
     name: Frontend Typecheck, Unit & E2E
     runs-on: ubuntu-latest
@@ -72,3 +122,46 @@ jobs:
         run: |
           npx playwright install --with-deps chromium
           npm run test:e2e
+
+  security-checks:
+    name: Security & Supply-Chain Gates
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Verify no secret .env files are tracked by Git
+        run: |
+          if git ls-files | grep -E '(^|/)\.env($|\.)' | grep -v '\.env\.example$'; then
+            echo "Forbidden .env file tracked in repository!"
+            exit 1
+          fi
+
+      - name: Reject hardcoded dev database passwords in runtime code and compose
+        run: |
+          if grep -rn "verimed_dev_password" apps/api/src apps/api/alembic compose.yaml; then
+            echo "Hardcoded dev password found in runtime code or compose.yaml!"
+            exit 1
+          fi
+
+      - name: Set up Python 3.12 and run pip-audit
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+
+      - name: Audit pinned Python dependencies
+        run: |
+          pip install --no-cache-dir pip-audit
+          pip-audit -r apps/api/requirements.lock
+
+      - name: Set up Node.js 20 and run npm audit
+        uses: actions/setup-node@v4
+        with:
+          node-version: "20"
+          cache: "npm"
+          cache-dependency-path: apps/web/package-lock.json
+
+      - name: Audit production npm dependencies
+        working-directory: apps/web
+        run: |
+          npm ci
+          npm audit --omit=dev --audit-level=high
