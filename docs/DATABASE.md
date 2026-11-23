@@ -125,7 +125,9 @@ Captures anonymous user ratings on explanation clarity.
 
 ---
 
-## 4. Privacy & Data Minimization Principles
+## 4. Privacy, Integrity & Role Hardening Principles
 
 1. **No PHI Storage**: Users are warned not to submit personal medical records or national IDs (NIK).
-2. **Private by Default**: `verification_requests.is_private` defaults to `TRUE` so user queries are never publicly listed.
+2. **Private by Default & Redaction at Rest**: `verification_requests.is_private` defaults to `TRUE`. When `ANONYMIZE_PRIVATE_CLAIMS=true` (default), submitted claim texts stored in `verification_requests.input_text` and `extracted_claims.claim_text` are anonymized to non-reversible SHA-256 hash markers, and expired records can be purged with `scripts/purge_expired_verifications.py`.
+3. **Integrity Constraints (`0002_security_hardening`)**: Database-level `CHECK` constraints enforce `confidence_score` bounds (`0.0–1.0`), valid `verdict` values, positive `rank_position` values, and partial unique indexes on `user_feedback` to prevent duplicate feedback inflation.
+4. **Least-Privilege Runtime Role**: Containerized API execution connects via the non-superuser `verimed_app` role (`NOSUPERUSER NOCREATEDB NOCREATEROLE`) while Alembic schema migrations run using privileged credentials.

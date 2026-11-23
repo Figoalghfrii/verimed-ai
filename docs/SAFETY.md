@@ -17,17 +17,18 @@
 
 ## 2. AI & Application Security Controls
 
-1. **Untrusted Input & Prompt Injection Mitigation**:
-   - Both user-submitted claims and retrieved document chunks are treated as untrusted input.
-   - Retrieved passages are isolated in structured XML-like delimiters (`<untrusted_evidence>`) and never concatenated raw into system instructions.
-2. **Input Validation & Rate Limiting**:
-   - Strict character limits and schema validation via Pydantic v2 (backend) and Zod (frontend).
-   - Rate-limiting headers and IP-based request throttling hooks are designed into the API middleware layer.
+1. **Strict Groundedness & Citation Enforcement**:
+   - User-submitted claims and retrieved document chunks are isolated in structured `<untrusted_evidence>` delimiters and screened for prompt-injection patterns.
+   - `ProgrammaticCitationValidator` fails closed when non-empty evidence has zero citation markers, and `ConfigurableLLMAssessorExplainer` rejects ungrounded URLs/DOIs, invented years, or missing citations by falling back to deterministic grounded synthesis.
+2. **Input Validation, Abuse Protection & Rate Limiting**:
+   - Strict character limits and schema validation via Pydantic v2 (backend) and Zod (frontend), URL sanitization (`https:`-only `getSafeExternalUrl`), and Content-Security-Policy with per-request nonces in `apps/web`.
+   - Trusted-proxy-aware sliding-window rate limiting with route-tier caps, concurrency semaphores (`MAX_CONCURRENT_VERIFICATIONS`), and LLM daily call budgets/circuit breakers (`LLM_DAILY_CALL_BUDGET`).
+   - Short-lived signed `feedback_token` binding + `client-token`/API key controls (`REQUIRE_CLIENT_AUTH`).
 3. **SSRF Protection**:
-   - Phase 1 accepts plain text claims only. Before any future URL ingestion is enabled, strict allowlisting of trusted domains and private IP range blocking (`127.0.0.0/8`, `10.0.0.0/8`, `172.16.0.0/12`, `192.168.0.0/16`, `169.254.169.254`) are enforced.
-4. **Secrets & CORS Isolation**:
-   - Backend credentials and API keys remain exclusively in server-side environment variables.
-   - CORS origins are explicitly configured via `CORS_ORIGINS`.
+   - All ingested documents (including `is_synthetic_demo=true`) enforce HTTPS-only URL validation rejecting userinfo credentials, non-443 ports, obfuscated/mapped private IPs, and DNS resolution to non-public networks when fetching externally.
+4. **Secrets, Host Header & CORS Isolation**:
+   - Production startup fails fast if database URLs, `CLIENT_AUTH_SECRET`, or `FEEDBACK_TOKEN_SECRET` are missing or contain insecure defaults. `TrustedHostMiddleware` enforces `ALLOWED_HOSTS` and OpenAPI docs are disabled by default in `staging`/`production`.
 5. **Privacy by Default**:
-   - `verification_requests.is_private` defaults to `TRUE`.
-   - Application logs record request IDs, status codes, and latency without logging raw user health text in production logs.
+   - `verification_requests.is_private` defaults to `TRUE` with at-rest claim redaction (`ANONYMIZE_PRIVATE_CLAIMS=true`) and retention cleanup (`scripts/purge_expired_verifications.py`).
+   - Frontend local history stores only 24h TTL redacted metadata unless the user explicitly opts in.
+   - Security telemetry logs structured JSON events to `verimed_api.security` without logging raw health claims or secrets.

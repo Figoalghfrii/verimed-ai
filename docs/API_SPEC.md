@@ -50,8 +50,14 @@ All API endpoints return a consistent JSON structure so frontend clients and aut
 
 ## 2. Phase 1 Implemented Endpoints
 
+### `GET /api/v1/health/live`
+Unprivileged liveness probe exempt from rate limiting (returns `{ "status": "ok" }` with no database queries or operational metadata). Use this endpoint for container health checks.
+
 ### `GET /api/v1/health`
-Checks service liveness, database connectivity, and `pgvector` extension readiness.
+Checks service readiness, database connectivity, and `pgvector` extension readiness (rate-limited). In `staging` and `production` (`EXPOSE_OPERATIONAL_METADATA=false`), `version`, `environment`, `ai_provider`, and `database.latency_ms` are omitted (`null`).
+
+### `POST /api/v1/client-token`
+Issues a short-lived HMAC-signed anonymous browser token (`X-VeriMed-Client-Token`) validating `Origin` against `CORS_ORIGINS`. When `REQUIRE_CLIENT_AUTH=true` (default in `staging`/`production`), `POST /api/v1/verify` and `POST /api/v1/feedback` require either `X-API-Key` or `X-VeriMed-Client-Token`.
 
 #### Response `200 OK`
 ```json
@@ -100,8 +106,9 @@ Returns `ApiResponse[VerificationResponseData]`:
 - `is_demonstration`: `true` when `AI_PROVIDER=mock`
 - `persisted`: `true` if persisted to PostgreSQL, `false` if running stateless when DB is offline
 - `emergency_triggered`: `true` when acute emergency indicators are detected (returns `emergency_guidance` with **119 / IGD** contacts and empty `claims`)
-- `claims[]`: list of extracted claims with `verdict`, `verdict_label_id`, `confidence_score`, `abstained`, `explanation`, `uncertainty_notes`, `citations_valid`, and `sources[]` (`is_synthetic_demo: true` in mock mode)
+- `claims[]`: list of extracted claims with optional `assessment_id` (UUID returned when `persisted=true`), `verdict`, `verdict_label_id`, `confidence_score`, `abstained`, `explanation`, `uncertainty_notes`, `citations_valid`, and `sources[]` (`is_synthetic_demo: true` in mock mode)
 - `disclaimer`: mandatory Bahasa Indonesia non-diagnostic disclaimer
+- `feedback_token`: server-signed HMAC token required when submitting `POST /api/v1/feedback` (`null` on emergency halt)
 
 #### Assessment Verdicts
 - `SUPPORTED` (*Didukung Bukti*)
@@ -142,7 +149,7 @@ Returns indexed evidence corpus counts (`documents_count`, `chunks_count`, `synt
 ## 5. Phase 4 Implemented User Feedback Endpoint & Rate Limiting
 
 ### `POST /api/v1/feedback`
-Records anonymous user clarity ratings on verification explanations (`is_helpful`, optional `feedback_category` in `CLARITY | CITATIONS | ACCURACY_CONCERN | OTHER`, and sanitized optional `comment` up to 500 characters).
+Records anonymous user clarity ratings on verification explanations (`is_helpful`, optional `feedback_category` in `CLARITY | CITATIONS | ACCURACY_CONCERN | OTHER`, sanitized optional `comment` up to 500 characters, and valid `feedback_token`). Duplicate submissions for the same `(request_id, assessment_id)` pair return `409 DUPLICATE_FEEDBACK`; missing or tampered `feedback_token` returns `403 INVALID_FEEDBACK_TOKEN`.
 
 #### Request Body
 ```json
@@ -176,7 +183,7 @@ Records anonymous user clarity ratings on verification explanations (`is_helpful
 ```
 
 ### Rate-Limiting Middleware
-Non-exempt endpoints include `X-RateLimit-Limit`, `X-RateLimit-Remaining`, and `X-RateLimit-Reset` headers (controlled by `RATE_LIMIT_ENABLED` and `RATE_LIMIT_REQUESTS_PER_MINUTE`). Requests exceeding the per-IP sliding-window limit receive HTTP `429` with `ErrorResponse` (`code: "RATE_LIMIT_EXCEEDED"`) and a `Retry-After` header. `/api/v1/health` and OpenAPI docs remain exempt.
+Non-exempt endpoints include `X-RateLimit-Limit`, `X-RateLimit-Remaining`, and `X-RateLimit-Reset` headers (controlled by `RATE_LIMIT_ENABLED`, `RATE_LIMIT_REQUESTS_PER_MINUTE`, and stricter route limits on `/verify`, `/feedback`, and `/client-token`). Client IPs are extracted via direct socket peer or rightmost untrusted `X-Forwarded-For` hop when peer IP is in `TRUSTED_PROXIES`, backed by an LRU-bounded bucket store. Only `/api/v1/health/live` stays exempt from throttling.
 
 ---
 

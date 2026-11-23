@@ -88,7 +88,7 @@ uvicorn verimed_api.main:app --reload --host 0.0.0.0 --port 8000
 - **Evidence Corpus Stats**: `http://localhost:8000/api/v1/evidence/stats`
 - **Interactive OpenAPI Docs**: `http://localhost:8000/api/v1/docs`
 
-> Set `AI_PROVIDER=hybrid` (or `configurable` with `LLM_BASE_URL` + `LLM_API_KEY`) in `.env` to verify claims against the seeded PostgreSQL `pgvector` + `tsvector` hybrid retriever instead of the default `mock` demo provider.
+> Set `AI_PROVIDER=hybrid` (or `AI_PROVIDER=configurable` with `LLM_BASE_URL=https://generativelanguage.googleapis.com/v1beta/openai` + `LLM_API_KEY` + `LLM_MODEL_NAME=gemini-2.5-flash` for Google Gemini) in `.env` to verify claims against the seeded PostgreSQL `pgvector` + `tsvector` hybrid retriever instead of the default `mock` demo provider. Add `--force-reembed` to `seed_demo_data.py` whenever switching `EMBEDDING_BACKEND`.
 
 ### Step 4: Set Up & Run Frontend (`apps/web`)
 In a separate terminal:

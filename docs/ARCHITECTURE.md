@@ -54,4 +54,4 @@ flowchart LR
    - `components/`: Feature UI components.
    - `schemas/`: Zod runtime validation schemas matching backend contracts.
 3. **`src/components/`**: Shared layout (`Header`, `Footer`, `MedicalDisclaimerBanner`) and accessible UI primitives.
-4. **`src/lib/`**: Shared HTTP client (`api-client.ts`) and validated environment config (`env.ts`).
+4. **`src/lib/`**: Shared HTTP client (`api-client.ts` with transparent anonymous client-token support), strict environment validation (`env.ts`), and URL sanitization (`safe-url.ts`), guarded at request edge by `src/middleware.ts` security headers and per-request CSP nonces.

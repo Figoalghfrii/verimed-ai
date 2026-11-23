@@ -41,3 +41,10 @@
 - [x] Expand `MockPipelineProvider` synthetic topics for full parity with `/verify` sample pills (`imunisasi`, `jamu`/`herbal`, `GGL`/`diabetes`/`hipertensi`).
 - [x] Propagate `language` (`id` | `en`) through `SafetyGuard`, `IndonesianQueryNormalizer` cross-lingual synonyms, `VerificationPipelineOrchestrator`, grounded/LLM explainers, and disclaimers.
 - [x] Add English sample claim chips and active local history selection highlight in `/verify`.
+
+## Phase 8: Security Hardening, Privacy & Abuse Resistance
+- [x] Make rate limiting trusted-proxy aware, add per-route quotas, LLM daily call budget, and concurrent verification semaphores.
+- [x] Fail closed on citation validation and ungrounded LLM output; expand emergency-symptom lexicon and prompt-injection telemetry.
+- [x] Add anonymous client-token / API-key access controls, signed single-use feedback tokens, and duplicate-feedback database constraints (`0002_security_hardening`).
+- [x] Add privacy controls: at-rest claim redaction, retention purge script, 24h privacy-safe local history, and HTTPS-only external URL rendering.
+- [x] Harden deployment: least-privilege `verimed_app` database role, read-only containers, required production secrets, CSP/security headers, dependency lockfile, and CI security/supply-chain gates.
